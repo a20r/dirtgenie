@@ -802,10 +802,17 @@ def generate_trip_plan_fallback(start: str, end: str, nights: int, preferences: 
         day_plan = daily_plans[day_key]
         day_num = day_key.split('_')[1]
 
+        # Handle both string and dict formats for overnight_location
+        overnight_location = day_plan.get('overnight_location', 'TBD')
+        if isinstance(overnight_location, dict):
+            overnight_location_str = overnight_location.get('name', str(overnight_location))
+        else:
+            overnight_location_str = str(overnight_location)
+            
         trip_plan += f"""
 ### Day {day_num}: {day_plan['start_location']} to {day_plan['end_location']}
 - **Distance**: {day_plan.get('estimated_distance_km', 'TBD')} km
-- **Accommodation**: {day_plan.get('overnight_location', 'TBD')}
+- **Accommodation**: {overnight_location_str}
 - **Highlights**: {', '.join(day_plan.get('highlights', []))}
 """
 
@@ -854,8 +861,15 @@ def extract_overnight_locations(trip_plan: str, itinerary: Optional[Dict[str, An
         for day_key in sorted(daily_plans.keys()):
             day_plan = daily_plans[day_key]
             overnight_location = day_plan.get('overnight_location', '')
-            if overnight_location and overnight_location != "Arrive at destination":
-                overnight_locations.append(overnight_location)
+            
+            # Handle both string and dict formats for overnight_location
+            if isinstance(overnight_location, dict):
+                overnight_location_str = overnight_location.get('name', str(overnight_location))
+            else:
+                overnight_location_str = str(overnight_location)
+                
+            if overnight_location_str and overnight_location_str != "Arrive at destination":
+                overnight_locations.append(overnight_location_str)
         return overnight_locations
 
     # Fallback to text parsing if no structured itinerary
@@ -999,7 +1013,13 @@ def create_geojson(start: str, end: str, directions: Dict[str, Any],
                 overnight_location = day_plan.get('overnight_location', '')
 
                 # Skip if this is the final day (arrival at destination)
-                if 'arrive at destination' in overnight_location.lower() or day_key == max(daily_plans.keys()):
+                # Handle both string and dict formats for overnight_location
+                if isinstance(overnight_location, dict):
+                    overnight_location_str = overnight_location.get('name', str(overnight_location))
+                else:
+                    overnight_location_str = str(overnight_location)
+                
+                if 'arrive at destination' in overnight_location_str.lower() or day_key == max(daily_plans.keys()):
                     continue
 
                 # Get the leg for this day
@@ -1021,12 +1041,12 @@ def create_geojson(start: str, end: str, directions: Dict[str, Any],
                             "properties": {
                                 "type": "overnight_accommodation",
                                 "day": day_key,
-                                "location_name": overnight_location,
+                                "location_name": overnight_location_str,
                                 "address": leg['end_address'],
                                 "precise_location": True,
                                 "marker_symbol": "campground",
                                 "marker_color": "#FF6B35",
-                                "description": f"{day_key.replace('_', ' ').title()} accommodation: {overnight_location}",
+                                "description": f"{day_key.replace('_', ' ').title()} accommodation: {overnight_location_str}",
                                 "highlights": day_plan.get('highlights', []),
                                 "estimated_distance_km": day_plan.get('estimated_distance_km', 0)
                             }
