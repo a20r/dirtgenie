@@ -405,7 +405,15 @@ def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str
         max_radius_km = int(avg_daily * (nights + 1) * 0.35)
         
         prompt = f"""
-You are an expert bikepacking tour planner. Your job is to plan a CLOSED-LOOP TOUR itinerary - a route that starts and ends at the same location.
+You are an expert bikepacking tour planner with access to current web information. Your job is to plan a CLOSED-LOOP TOUR itinerary - a route that starts and ends at the same location.
+
+IMPORTANT: Use web search to find current, up-to-date information about:
+- Campgrounds and accommodations (availability, booking info, current status)
+- Bike trails and cycling routes (conditions, closures, recent reviews)
+- Local bike shops and services along the route
+- Current weather patterns and seasonal considerations
+- Local events or festivals that might affect the trip
+- Recent cyclist reviews and recommendations for the area
 
 TRIP PARAMETERS:
 - Start/End: {start}
@@ -555,9 +563,9 @@ Be specific with location names (include city, state/province). Choose real plac
 
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-2024-11-20",
             messages=[
-                {"role": "system", "content": "You are an expert bikepacking tour planner. Always respond with valid JSON exactly as requested."},
+                {"role": "system", "content": "You are an expert bikepacking tour planner with access to current web information. Always respond with valid JSON exactly as requested. Use your web search capabilities to find current information about accommodations, trail conditions, and local attractions."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
@@ -672,7 +680,16 @@ def generate_trip_plan(start: str, end: str, nights: int, preferences: Dict[str,
 
     # Create detailed prompt for OpenAI
     prompt = f"""
-You are an expert bikepacking trip planner. Create a detailed {nights}-night bikepacking itinerary based on the planned route.
+You are an expert bikepacking trip planner with access to current web information. Create a detailed {nights}-night bikepacking itinerary based on the planned route.
+
+SEARCH FOR CURRENT INFORMATION ABOUT:
+- Accommodation availability and pricing at each overnight location
+- Current trail conditions and closures along the route
+- Weather forecasts and seasonal considerations
+- Local bike shops for repairs and supplies
+- Current food/water sources and resupply opportunities
+- Local events, festivals, or attractions during the travel period
+- Recent safety concerns or route changes
 
 PLANNED ITINERARY:
 {json.dumps(itinerary, indent=2)}
@@ -693,30 +710,31 @@ USER PREFERENCES:
 
 REQUIREMENTS:
 1. Use the planned itinerary as your foundation
-2. Enhance each day with detailed recommendations
-3. Include specific accommodation details for each overnight location
-4. Add points of interest, food stops, and resupply opportunities along each leg
-5. Include packing suggestions and safety considerations
-6. Provide weather and seasonal considerations
-7. Include emergency contacts and backup plans
+2. Search for and include current, accurate information about accommodations, conditions, and attractions
+3. Enhance each day with detailed recommendations based on current information
+4. Include specific accommodation details with current availability and booking information
+5. Add points of interest, food stops, and resupply opportunities with current operating status
+6. Include packing suggestions and safety considerations based on current conditions
+7. Provide current weather forecasts and seasonal considerations
+8. Include emergency contacts and backup plans with up-to-date information
 
 FORMAT as detailed markdown with:
-- Trip overview matching the planned route
+- Trip overview matching the planned route with current conditions
 - Daily itineraries with actual distances, elevation, accommodation, highlights
-- Specific recommendations for each planned waypoint
-- Packing list
-- Safety and emergency information
-- Budget estimates
-- Additional tips and considerations
+- Specific recommendations for each planned waypoint with current information
+- Packing list adapted to current weather/conditions
+- Safety and emergency information with current contacts
+- Budget estimates with current pricing
+- Additional tips and considerations based on recent information
 
-Make this a comprehensive, actionable plan that follows the planned itinerary.
+Make this a comprehensive, actionable plan that follows the planned itinerary and incorporates current, web-searched information.
 """
 
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-2024-11-20",
             messages=[
-                {"role": "system", "content": "You are an expert bikepacking guide with extensive knowledge of routes, gear, safety, and local attractions worldwide."},
+                {"role": "system", "content": "You are an expert bikepacking guide with extensive knowledge of routes, gear, safety, and local attractions worldwide. You have access to current web information and should search for up-to-date details about accommodations, trail conditions, weather forecasts, bike shops, local events, and safety information along the route. Always provide current, accurate information in your recommendations."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,

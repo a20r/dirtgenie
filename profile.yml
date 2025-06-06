@@ -11,10 +11,10 @@ stealth_camping: true
 fitness_level: advanced
 
 # Daily distance preference in km (e.g., "30-50", "50-80", "80-120")
-daily_distance: 40-50
+daily_distance: 50-80
 
 # Terrain preference: paved, gravel, mixed, or challenging
-terrain: gravel
+terrain: challenging
 
 # Budget range: budget, moderate, or luxury
 budget: budget
