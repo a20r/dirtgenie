@@ -363,17 +363,136 @@ def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str
     daily_distance = preferences.get('daily_distance', '60-80')
     if 'km' in daily_distance:
         daily_distance = daily_distance.replace('km', '').strip()
+    
+    # Detect if this is a closed-loop tour (start and end are the same or very similar)
+    is_closed_loop = (start.lower().strip() == end.lower().strip() or 
+                     # Also check if they're essentially the same location with slight variations
+                     (start.replace(',', '').replace(' ', '').lower() in end.replace(',', '').replace(' ', '').lower() or
+                      end.replace(',', '').replace(' ', '').lower() in start.replace(',', '').replace(' ', '').lower()))
 
     # Estimate rough distance for planning
     try:
-        # Get a quick direct route estimate for planning purposes only
-        rough_directions = get_bicycle_directions(start, end)
-        total_distance = sum(leg['distance']['value'] for leg in rough_directions['legs']) / 1000
+        if is_closed_loop:
+            # For closed loops, we can't use direct distance, so estimate based on daily distance and nights
+            # Parse daily distance range to get average
+            if '-' in daily_distance:
+                min_dist, max_dist = map(int, daily_distance.split('-'))
+                avg_daily_distance = (min_dist + max_dist) / 2
+            else:
+                avg_daily_distance = int(daily_distance.split()[0]) if daily_distance else 60
+            
+            total_distance = avg_daily_distance * (nights + 1)
+        else:
+            # Get a quick direct route estimate for planning purposes only
+            rough_directions = get_bicycle_directions(start, end)
+            total_distance = sum(leg['distance']['value'] for leg in rough_directions['legs']) / 1000
     except:
         # Fallback if route query fails
         total_distance = 100  # Default assumption
 
-    prompt = f"""
+    # Create different prompts for closed-loop vs point-to-point tours
+    if is_closed_loop:
+        # Calculate maximum practical radius for closed-loop planning
+        # Conservative estimate: assume you need to be able to get back within remaining days
+        if '-' in daily_distance:
+            min_daily, max_daily = map(int, daily_distance.split('-'))
+            avg_daily = (min_daily + max_daily) / 2
+        else:
+            avg_daily = int(daily_distance.split()[0]) if daily_distance else 50
+        
+        # Maximum radius is roughly: (total_days * avg_daily) / (2 * pi) for a circular tour
+        # But we'll be more conservative and use about 30-40% of total distance as max radius
+        max_radius_km = int(avg_daily * (nights + 1) * 0.35)
+        
+        prompt = f"""
+You are an expert bikepacking tour planner. Your job is to plan a CLOSED-LOOP TOUR itinerary - a route that starts and ends at the same location.
+
+TRIP PARAMETERS:
+- Start/End: {start}
+- Duration: {nights} nights ({nights + 1} days)
+- Daily distance preference: {daily_distance} km per day
+- Estimated total loop distance: {total_distance:.0f} km
+
+USER PREFERENCES:
+- Accommodation: {preferences.get('accommodation', 'mixed')}
+- Stealth camping allowed: {preferences.get('stealth_camping', False)}
+- Fitness level: {preferences.get('fitness_level', 'intermediate')}
+- Terrain preference: {preferences.get('terrain', 'mixed')}
+- Budget: {preferences.get('budget', 'moderate')}
+- Interests: {', '.join(preferences.get('interests', []))}
+
+TASK: Plan a {nights + 1}-day CLOSED-LOOP itinerary that starts and ends at the same location.
+
+CRITICAL REQUIREMENTS FOR CLOSED-LOOP TOURS:
+1. **Every single day MUST be within {daily_distance} km** - including the final return day
+2. **Plan a true loop, not out-and-back** - avoid going straight out and straight back
+3. **Maximum radius calculation** - with {nights + 1} days and {daily_distance} km/day, you can only go about {max_radius_km}km from start as the crow flies
+4. **Think circular/polygonal** - plan destinations that form a roughly circular or polygonal pattern around the start point
+5. **Balance the loop** - ensure you're never more than {max_radius_km}km from home at any point
+
+LOOP PLANNING STRATEGY:
+For a {nights + 1}-day loop with {daily_distance} km daily distance:
+- **Maximum distance from start**: About {max_radius_km}km radius (straight-line distance)
+- **Loop geometry**: Plan waypoints that form a circle/polygon, not a line
+- **Progressive planning**: Each day should move you around the loop, not just away from start
+- **Return consideration**: Every waypoint should be positioned such that you can get home within the remaining days at {daily_distance} km/day
+
+BEFORE PLANNING: Calculate if each overnight location can get you back to {start} within the remaining days.
+Example: If it's day 3 of 6, and you're in location X, can you get from X to {start} in 3 days at {daily_distance} km/day?
+
+VALIDATION CHECKLIST FOR EACH DAY:
+- Day 1 destination: Can you get back to {start} in {nights} days at {daily_distance} km/day?
+- Day 2 destination: Can you get back to {start} in {nights-1} days at {daily_distance} km/day?
+- Day 3 destination: Can you get back to {start} in {nights-2} days at {daily_distance} km/day?
+- Continue this pattern...
+- Final day: MUST be exactly within {daily_distance} km of {start}
+
+Think of this as planning waypoints on a circle or polygon around {start}, not a straight line out and back.
+
+Return the plan in this exact JSON format:
+
+{{
+    "itinerary": {{
+        "day_1": {{
+            "start_location": "{start}",
+            "end_location": "Town/City within {daily_distance.split('-')[0] if '-' in daily_distance else daily_distance[:2]}km of start",
+            "overnight_location": "Specific accommodation name or camping area",
+            "highlights": ["attraction 1", "attraction 2"],
+            "estimated_distance_km": {daily_distance.split('-')[0] if '-' in daily_distance else daily_distance[:2]},
+            "distance_from_start_km": "Straight-line distance from {start}",
+            "days_remaining_to_return": {nights}
+        }},
+        "day_2": {{
+            "start_location": "Previous end location",
+            "end_location": "Next waypoint continuing around the loop (not further from start)",
+            "overnight_location": "Specific accommodation name or camping area", 
+            "highlights": ["attraction 1", "attraction 2"],
+            "estimated_distance_km": {daily_distance.split('-')[1] if '-' in daily_distance else daily_distance[:2]},
+            "distance_from_start_km": "Straight-line distance from {start}",
+            "days_remaining_to_return": {nights-1}
+        }},
+        ...continue for all {nights + 1} days...
+        "day_{nights + 1}": {{
+            "start_location": "Previous end location",
+            "end_location": "{start}",
+            "overnight_location": "Back home",
+            "highlights": ["final attractions", "return home"],
+            "estimated_distance_km": {daily_distance.split('-')[0] if '-' in daily_distance else daily_distance[:2]},
+            "distance_from_start_km": 0,
+            "days_remaining_to_return": 0
+        }}
+    }},
+    "total_estimated_distance": {total_distance:.0f},
+    "route_summary": "Closed-loop tour starting and ending at {start}, max radius {max_radius_km}km",
+    "validation_note": "Each overnight location verified to be returnable within remaining days at {daily_distance} km/day"
+}}
+
+IMPORTANT: Every overnight location MUST be positioned such that:
+(distance_from_start_km * 1.4) <= (days_remaining_to_return * max_daily_distance)
+This ensures you can always get back within your daily distance constraints.
+"""
+    else:
+        prompt = f"""
 You are an expert bikepacking tour planner. Your job is to plan the ITINERARY first - determining the best places to visit and stay overnight.
 
 TRIP PARAMETERS:
@@ -396,9 +515,11 @@ TASK: Plan a {nights + 1}-day itinerary with specific waypoints and overnight lo
 REQUIREMENTS:
 1. Identify the best intermediate destinations that make sense for a bikepacking tour
 2. Consider scenic routes, points of interest, accommodation availability
-3. Plan realistic daily segments based on terrain and fitness level
+3. Plan realistic daily segments based on terrain and fitness level - stay within {daily_distance} km per day
 4. Choose specific towns/cities/landmarks as overnight stops
-5. Return the plan in this exact JSON format:
+5. Ensure progression toward the final destination
+
+Return the plan in this exact JSON format:
 
 {{
     "itinerary": {{
