@@ -363,12 +363,12 @@ def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str
     daily_distance = preferences.get('daily_distance', '60-80')
     if 'km' in daily_distance:
         daily_distance = daily_distance.replace('km', '').strip()
-    
+
     # Detect if this is a closed-loop tour (start and end are the same or very similar)
-    is_closed_loop = (start.lower().strip() == end.lower().strip() or 
-                     # Also check if they're essentially the same location with slight variations
-                     (start.replace(',', '').replace(' ', '').lower() in end.replace(',', '').replace(' ', '').lower() or
-                      end.replace(',', '').replace(' ', '').lower() in start.replace(',', '').replace(' ', '').lower()))
+    is_closed_loop = (start.lower().strip() == end.lower().strip() or
+                      # Also check if they're essentially the same location with slight variations
+                      (start.replace(',', '').replace(' ', '').lower() in end.replace(',', '').replace(' ', '').lower() or
+                       end.replace(',', '').replace(' ', '').lower() in start.replace(',', '').replace(' ', '').lower()))
 
     # Estimate rough distance for planning
     try:
@@ -380,7 +380,7 @@ def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str
                 avg_daily_distance = (min_dist + max_dist) / 2
             else:
                 avg_daily_distance = int(daily_distance.split()[0]) if daily_distance else 60
-            
+
             total_distance = avg_daily_distance * (nights + 1)
         else:
             # Get a quick direct route estimate for planning purposes only
@@ -399,11 +399,11 @@ def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str
             avg_daily = (min_daily + max_daily) / 2
         else:
             avg_daily = int(daily_distance.split()[0]) if daily_distance else 50
-        
+
         # Maximum radius is roughly: (total_days * avg_daily) / (2 * pi) for a circular tour
         # But we'll be more conservative and use about 30-40% of total distance as max radius
         max_radius_km = int(avg_daily * (nights + 1) * 0.35)
-        
+
         prompt = f"""
 You are an expert bikepacking tour planner with access to current web information. Your job is to plan a CLOSED-LOOP TOUR itinerary - a route that starts and ends at the same location.
 
@@ -563,13 +563,13 @@ Be specific with location names (include city, state/province). Choose real plac
 
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o-2024-11-20",
+            model="gpt-4.1",
             messages=[
                 {"role": "system", "content": "You are an expert bikepacking tour planner with access to current web information. Always respond with valid JSON exactly as requested. Use your web search capabilities to find current information about accommodations, trail conditions, and local attractions."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
-            temperature=0.9
+            temperature=0.7
         )
 
         import json
@@ -732,13 +732,13 @@ Make this a comprehensive, actionable plan that follows the planned itinerary an
 
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o-2024-11-20",
+            model="gpt-4.1",
             messages=[
                 {"role": "system", "content": "You are an expert bikepacking guide with extensive knowledge of routes, gear, safety, and local attractions worldwide. You have access to current web information and should search for up-to-date details about accommodations, trail conditions, weather forecasts, bike shops, local events, and safety information along the route. Always provide current, accurate information in your recommendations."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
-            temperature=0.5
+            temperature=0.7
         )
 
         return response.choices[0].message.content or "Error: Empty response from OpenAI"

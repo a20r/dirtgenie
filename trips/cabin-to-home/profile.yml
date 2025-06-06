@@ -1,0 +1,25 @@
+# Bikepacking Trip Planner Profile
+# Edit this file to customize your default trip preferences
+
+# Accommodation preference: camping, hotels, or mixed
+accommodation: camping
+
+# Allow stealth/wild camping: true or false
+stealth_camping: true
+
+# Fitness level: beginner, intermediate, or advanced
+fitness_level: advanced
+
+# Daily distance preference in km (e.g., "30-50", "50-80", "80-120")
+daily_distance: 50-80
+
+# Terrain preference: paved, gravel, mixed, or challenging
+terrain: challenging
+
+# Budget range: budget, moderate, or luxury
+budget: budget
+
+# Special interests (list of keywords)
+interests:
+- nature
+- adventure
