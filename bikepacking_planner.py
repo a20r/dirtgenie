@@ -498,6 +498,12 @@ Return the plan in this exact JSON format:
 IMPORTANT: Every overnight location MUST be positioned such that:
 (distance_from_start_km * 1.4) <= (days_remaining_to_return * max_daily_distance)
 This ensures you can always get back within your daily distance constraints.
+
+SEARCH REQUIREMENTS:
+- Search for current weather forecasts for all planned locations and travel dates
+- Find specific, bookable accommodations with current availability and pricing
+- Verify trail conditions and any seasonal closures or restrictions
+- Look up local services and attractions with current operating information
 """
     else:
         prompt = f"""
@@ -520,7 +526,13 @@ USER PREFERENCES:
 
 TASK: Plan a {nights + 1}-day itinerary with specific waypoints and overnight locations.
 
-REQUIREMENTS:
+SEARCH REQUIREMENTS:
+- Search for current weather forecasts for all planned locations and travel dates
+- Find specific, bookable accommodations with current availability and pricing
+- Verify trail conditions and any seasonal closures or restrictions
+- Look up local services and attractions with current operating information
+
+PLANNING REQUIREMENTS:
 1. Identify the best intermediate destinations that make sense for a bikepacking tour
 2. Consider scenic routes, points of interest, accommodation availability
 3. Plan realistic daily segments based on terrain and fitness level - stay within {daily_distance} km per day
@@ -534,14 +546,14 @@ Return the plan in this exact JSON format:
         "day_1": {{
             "start_location": "{start}",
             "end_location": "Specific Town/City Name",
-            "overnight_location": "Specific accommodation name or camping area",
+            "overnight_location": "Specific accommodation name or camping area (search for real, bookable options with current availability)",
             "highlights": ["attraction 1", "attraction 2"],
             "estimated_distance_km": 75
         }},
         "day_2": {{
             "start_location": "Previous end location",
             "end_location": "Next Town/City Name",
-            "overnight_location": "Specific accommodation name or camping area",
+            "overnight_location": "Specific accommodation name or camping area (search for real, bookable options with current availability)",
             "highlights": ["attraction 1", "attraction 2"],
             "estimated_distance_km": 80
         }},
@@ -559,13 +571,18 @@ Return the plan in this exact JSON format:
 }}
 
 Be specific with location names (include city, state/province). Choose real places that make sense for bikepacking.
+
+IMPORTANT: Use web search to find:
+1. Current weather forecasts for each location and planned travel dates
+2. Specific accommodations with real names, contact info, current availability and pricing
+3. Verify all locations and services are real and currently operating
 """
 
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4.1",
             messages=[
-                {"role": "system", "content": "You are an expert bikepacking tour planner with access to current web information. Always respond with valid JSON exactly as requested. Use your web search capabilities to find current information about accommodations, trail conditions, and local attractions."},
+                {"role": "system", "content": "You are an expert bikepacking tour planner with access to current web information. Always respond with valid JSON exactly as requested. IMPORTANT: Use your web search capabilities to find current information about: 1) Specific accommodations (campgrounds, hotels, hostels) with availability, pricing, and booking details, 2) Current weather forecasts for the planned travel dates and locations, 3) Trail conditions and any closures, 4) Local attractions and their current operating status. Search for real, specific places and current information."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
@@ -683,13 +700,15 @@ def generate_trip_plan(start: str, end: str, nights: int, preferences: Dict[str,
 You are an expert bikepacking trip planner with access to current web information. Create a detailed {nights}-night bikepacking itinerary based on the planned route.
 
 SEARCH FOR CURRENT INFORMATION ABOUT:
-- Accommodation availability and pricing at each overnight location
-- Current trail conditions and closures along the route
-- Weather forecasts and seasonal considerations
-- Local bike shops for repairs and supplies
-- Current food/water sources and resupply opportunities
-- Local events, festivals, or attractions during the travel period
-- Recent safety concerns or route changes
+- WEATHER: Search for detailed weather forecasts for each planned location and travel dates
+- ACCOMMODATIONS: Find specific campgrounds, hotels, B&Bs, hostels with current availability, exact pricing, booking requirements, and contact information
+- Trail conditions, road closures, construction, or detours along the route
+- Local bike shops for repairs, rentals, and supplies with current hours and services
+- Food sources, restaurants, grocery stores with current hours and seasonal availability
+- Water sources and refill points along the route
+- Local events, festivals, or seasonal attractions during the planned travel period
+- Recent safety concerns, wildlife warnings, or route advisories
+- Park permits, fees, or reservations required for camping or attractions
 
 PLANNED ITINERARY:
 {json.dumps(itinerary, indent=2)}
@@ -710,22 +729,27 @@ USER PREFERENCES:
 
 REQUIREMENTS:
 1. Use the planned itinerary as your foundation
-2. Search for and include current, accurate information about accommodations, conditions, and attractions
-3. Enhance each day with detailed recommendations based on current information
-4. Include specific accommodation details with current availability and booking information
-5. Add points of interest, food stops, and resupply opportunities with current operating status
-6. Include packing suggestions and safety considerations based on current conditions
-7. Provide current weather forecasts and seasonal considerations
-8. Include emergency contacts and backup plans with up-to-date information
+2. PRIORITY: Search for and include current weather forecasts for each location and travel date
+3. PRIORITY: Search for specific accommodation options with current availability, exact pricing, and booking details
+4. Enhance each day with detailed recommendations based on current web-searched information
+5. Include multiple accommodation options per location (primary + backup options)
+6. Add points of interest, food stops, and resupply opportunities with current operating status and hours
+7. Include packing suggestions based on current weather forecasts and seasonal conditions
+8. Provide detailed weather information: temperatures, precipitation, wind, and seasonal considerations
+9. Include emergency contacts and backup plans with up-to-date contact information
+10. Search for any current events, construction, or alerts that might affect the planned route
 
 FORMAT as detailed markdown with:
+- **WEATHER SECTION**: Detailed current forecasts for each location and travel day
+- **ACCOMMODATION SECTION**: Specific lodging options with current availability, pricing, and booking information
 - Trip overview matching the planned route with current conditions
-- Daily itineraries with actual distances, elevation, accommodation, highlights
-- Specific recommendations for each planned waypoint with current information
-- Packing list adapted to current weather/conditions
-- Safety and emergency information with current contacts
-- Budget estimates with current pricing
-- Additional tips and considerations based on recent information
+- Daily itineraries with actual distances, elevation, accommodation options, highlights
+- Multiple accommodation options per location (primary + backup choices)
+- Specific recommendations for each planned waypoint with current web-searched information
+- Packing list adapted to current weather forecasts and conditions
+- Safety and emergency information with current contacts and conditions
+- Budget estimates with current, researched pricing
+- Additional tips and considerations based on recent web-searched information
 
 Make this a comprehensive, actionable plan that follows the planned itinerary and incorporates current, web-searched information.
 """
@@ -734,7 +758,7 @@ Make this a comprehensive, actionable plan that follows the planned itinerary an
         response = openai_client.chat.completions.create(
             model="gpt-4.1",
             messages=[
-                {"role": "system", "content": "You are an expert bikepacking guide with extensive knowledge of routes, gear, safety, and local attractions worldwide. You have access to current web information and should search for up-to-date details about accommodations, trail conditions, weather forecasts, bike shops, local events, and safety information along the route. Always provide current, accurate information in your recommendations."},
+                {"role": "system", "content": "You are an expert bikepacking guide with extensive knowledge of routes, gear, safety, and local attractions worldwide. You have access to current web information and should search for up-to-date details about: 1) WEATHER - Get detailed forecasts for all locations and travel dates, 2) ACCOMMODATIONS - Find specific places to stay with current availability, pricing, and booking information, 3) Trail conditions, closures, and safety alerts, 4) Local services (bike shops, restaurants, stores) with current hours and status. Always provide current, accurate, searchable information in your recommendations."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
