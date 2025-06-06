@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import googlemaps
 import polyline  # For decoding Google Maps polylines
+import yaml  # For loading profile configurations
 from openai import OpenAI
 
 
@@ -136,6 +137,141 @@ def extract_route_points(directions: Dict[str, Any]) -> List[Tuple[float, float]
     return points
 
 
+def create_default_profile() -> Dict[str, Any]:
+    """
+    Create a default profile configuration.
+
+    Returns:
+        Dictionary with default preferences
+    """
+    return {
+        'accommodation': 'mixed',
+        'stealth_camping': False,
+        'fitness_level': 'intermediate',
+        'daily_distance': '50-80',
+        'terrain': 'mixed',
+        'budget': 'moderate',
+        'interests': ['nature', 'adventure']
+    }
+
+
+def load_profile(profile_path: str) -> Dict[str, Any]:
+    """
+    Load user preferences from a YAML profile file.
+
+    Args:
+        profile_path: Path to the YAML profile file
+
+    Returns:
+        Dictionary of user preferences
+
+    Raises:
+        FileNotFoundError: If profile file doesn't exist
+        yaml.YAMLError: If profile file is invalid YAML
+        ValueError: If profile file is missing required fields
+    """
+    profile_file = Path(profile_path)
+
+    if not profile_file.exists():
+        print(f"❌ Profile file not found: {profile_path}")
+        print(f"💡 Creating default profile at: {profile_path}")
+
+        # Create default profile
+        default_profile = create_default_profile()
+        save_profile(default_profile, profile_path)
+
+        print(f"✅ Default profile created. You can edit {profile_path} to customize your preferences.")
+        return default_profile
+
+    try:
+        with open(profile_file, 'r', encoding='utf-8') as f:
+            profile_data = yaml.safe_load(f)
+
+        if not isinstance(profile_data, dict):
+            raise ValueError("Profile file must contain a YAML dictionary")
+
+        # Validate required fields
+        required_fields = ['accommodation', 'fitness_level', 'daily_distance', 'terrain', 'budget']
+        missing_fields = [field for field in required_fields if field not in profile_data]
+
+        if missing_fields:
+            raise ValueError(f"Profile file missing required fields: {', '.join(missing_fields)}")
+
+        # Set defaults for optional fields
+        if 'stealth_camping' not in profile_data:
+            profile_data['stealth_camping'] = False
+        if 'interests' not in profile_data:
+            profile_data['interests'] = []
+
+        print(f"✅ Loaded profile from: {profile_path}")
+        return profile_data
+
+    except yaml.YAMLError as e:
+        raise yaml.YAMLError(f"Invalid YAML in profile file {profile_path}: {e}")
+    except Exception as e:
+        raise ValueError(f"Error loading profile file {profile_path}: {e}")
+
+
+def save_profile(profile_data: Dict[str, Any], profile_path: str) -> None:
+    """
+    Save user preferences to a YAML profile file.
+
+    Args:
+        profile_data: Dictionary of user preferences
+        profile_path: Path where to save the profile file
+    """
+    profile_file = Path(profile_path)
+    profile_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Create a well-documented YAML file
+    yaml_content = f"""# Bikepacking Trip Planner Profile
+# Edit this file to customize your default trip preferences
+
+# Accommodation preference: camping, hotels, or mixed
+accommodation: {profile_data['accommodation']}
+
+# Allow stealth/wild camping: true or false
+stealth_camping: {profile_data['stealth_camping']}
+
+# Fitness level: beginner, intermediate, or advanced
+fitness_level: {profile_data['fitness_level']}
+
+# Daily distance preference in km (e.g., "30-50", "50-80", "80-120")
+daily_distance: {profile_data['daily_distance']}
+
+# Terrain preference: paved, gravel, mixed, or challenging
+terrain: {profile_data['terrain']}
+
+# Budget range: budget, moderate, or luxury
+budget: {profile_data['budget']}
+
+# Special interests (list of keywords)
+interests:
+{yaml.dump(profile_data['interests'], default_flow_style=False, indent=2).strip()}
+"""
+
+    with open(profile_file, 'w', encoding='utf-8') as f:
+        f.write(yaml_content)
+
+
+def get_user_preferences(interactive: bool = False, profile_path: str = "profile.yml") -> Dict[str, Any]:
+    """
+    Get user preferences either interactively or from a profile file.
+
+    Args:
+        interactive: If True, ask questions interactively
+        profile_path: Path to YAML profile file (used when not interactive)
+
+    Returns:
+        Dictionary of user preferences
+    """
+    if interactive:
+        return ask_follow_up_questions()
+    else:
+        print(f"\n📋 Loading preferences from profile: {profile_path}")
+        return load_profile(profile_path)
+
+
 def ask_follow_up_questions() -> Dict[str, str]:
     """
     Ask the user follow-up questions to tailor the trip.
@@ -213,7 +349,7 @@ def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str
 
     Args:
         start: Starting location
-        end: Ending location  
+        end: Ending location
         nights: Number of nights
         preferences: User preferences from follow-up questions
 
@@ -227,7 +363,7 @@ def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str
     daily_distance = preferences.get('daily_distance', '60-80')
     if 'km' in daily_distance:
         daily_distance = daily_distance.replace('km', '').strip()
-    
+
     # Estimate rough distance for planning
     try:
         # Get a quick direct route estimate for planning purposes only
@@ -275,7 +411,7 @@ REQUIREMENTS:
         }},
         "day_2": {{
             "start_location": "Previous end location",
-            "end_location": "Next Town/City Name", 
+            "end_location": "Next Town/City Name",
             "overnight_location": "Specific accommodation name or camping area",
             "highlights": ["attraction 1", "attraction 2"],
             "estimated_distance_km": 80
@@ -303,26 +439,26 @@ Be specific with location names (include city, state/province). Choose real plac
                 {"role": "system", "content": "You are an expert bikepacking tour planner. Always respond with valid JSON exactly as requested."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=2000,
-            temperature=0.7
+            max_tokens=4000,
+            temperature=0.9
         )
 
         import json
         content = response.choices[0].message.content
         if not content:
             raise ValueError("Empty response from OpenAI")
-            
+
         itinerary_json = content.strip()
-        
+
         # Clean up the response to ensure it's valid JSON
         if itinerary_json.startswith('```json'):
             itinerary_json = itinerary_json[7:]
         if itinerary_json.endswith('```'):
             itinerary_json = itinerary_json[:-3]
-        
+
         itinerary = json.loads(itinerary_json)
         return itinerary
-        
+
     except Exception as e:
         print(f"Error planning itinerary: {e}")
         # Fallback to simple 2-stop itinerary
@@ -351,10 +487,10 @@ Be specific with location names (include city, state/province). Choose real plac
 def get_multi_waypoint_directions(itinerary: Dict[str, Any]) -> Dict[str, Any]:
     """
     Get bicycle directions for the planned itinerary with multiple waypoints.
-    
+
     Args:
         itinerary: Planned itinerary from plan_tour_itinerary()
-        
+
     Returns:
         Google Maps directions with all waypoints
     """
@@ -364,23 +500,23 @@ def get_multi_waypoint_directions(itinerary: Dict[str, Any]) -> Dict[str, Any]:
     # Extract waypoints from itinerary
     daily_plans = itinerary['itinerary']
     waypoints = []
-    
+
     # Get all intermediate stops (exclude final destination)
     for day_key in sorted(daily_plans.keys()):
         day_plan = daily_plans[day_key]
         end_location = day_plan['end_location']
-        
+
         # Don't add the final destination as a waypoint (it will be the destination)
         if day_key != max(daily_plans.keys()):
             waypoints.append(end_location)
-    
+
     # First location is start, last location is end
     first_day = daily_plans[min(daily_plans.keys())]
     last_day = daily_plans[max(daily_plans.keys())]
-    
+
     start_location = first_day['start_location']
     end_location = last_day['end_location']
-    
+
     try:
         return get_bicycle_directions(start_location, end_location, waypoints)
     except Exception as e:
@@ -396,7 +532,7 @@ def generate_trip_plan(start: str, end: str, nights: int, preferences: Dict[str,
 
     Args:
         start: Starting location
-        end: Ending location  
+        end: Ending location
         nights: Number of nights
         preferences: User preferences from follow-up questions
         itinerary: Planned itinerary with waypoints
@@ -463,7 +599,7 @@ Make this a comprehensive, actionable plan that follows the planned itinerary.
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
-            temperature=0.7
+            temperature=0.5
         )
 
         return response.choices[0].message.content or "Error: Empty response from OpenAI"
@@ -486,7 +622,7 @@ def generate_trip_plan_fallback(start: str, end: str, nights: int, preferences: 
 
     # Create a simple trip plan based on the itinerary
     daily_plans = itinerary.get('itinerary', {})
-    
+
     trip_plan = f"""# Bikepacking Trip: {start} to {end}
 
 ## Trip Overview
@@ -502,7 +638,7 @@ def generate_trip_plan_fallback(start: str, end: str, nights: int, preferences: 
     for day_key in sorted(daily_plans.keys()):
         day_plan = daily_plans[day_key]
         day_num = day_key.split('_')[1]
-        
+
         trip_plan += f"""
 ### Day {day_num}: {day_plan['start_location']} to {day_plan['end_location']}
 - **Distance**: {day_plan.get('estimated_distance_km', 'TBD')} km
@@ -586,7 +722,7 @@ def extract_overnight_locations(trip_plan: str, itinerary: Optional[Dict[str, An
 
 
 def create_geojson(start: str, end: str, directions: Dict[str, Any],
-                   preferences: Dict[str, str], trip_plan: str = "", 
+                   preferences: Dict[str, str], trip_plan: str = "",
                    itinerary: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Create a GeoJSON file with detailed route information.
@@ -686,29 +822,29 @@ def create_geojson(start: str, end: str, directions: Dict[str, Any],
         if itinerary and 'itinerary' in itinerary:
             daily_plans = itinerary['itinerary']
             legs_per_day = {}
-            
+
             # Map days to legs based on the multi-waypoint structure
             leg_index = 0
             for day_key in sorted(daily_plans.keys()):
                 if leg_index < len(directions['legs']):
                     legs_per_day[day_key] = leg_index
                     leg_index += 1
-            
+
             # Add overnight markers at the end of each day's route
             for day_key in sorted(daily_plans.keys()):
                 day_plan = daily_plans[day_key]
                 overnight_location = day_plan.get('overnight_location', '')
-                
+
                 # Skip if this is the final day (arrival at destination)
                 if 'arrive at destination' in overnight_location.lower() or day_key == max(daily_plans.keys()):
                     continue
-                
+
                 # Get the leg for this day
                 if day_key in legs_per_day:
                     leg_idx = legs_per_day[day_key]
                     if leg_idx < len(directions['legs']):
                         leg = directions['legs'][leg_idx]
-                        
+
                         # Use the end point of this leg as the overnight location
                         overnight_marker = {
                             "type": "Feature",
@@ -733,7 +869,7 @@ def create_geojson(start: str, end: str, directions: Dict[str, Any],
                             }
                         }
                         geojson["features"].append(overnight_marker)
-        
+
         # Fallback to distance-based estimation if no structured itinerary
         elif overnight_locations:
             route_coordinates = []
@@ -883,6 +1019,10 @@ def main():
     parser.add_argument("start", help="Starting location")
     parser.add_argument("end", help="Ending location")
     parser.add_argument("nights", type=int, help="Number of nights for the trip")
+    parser.add_argument("-i", "--interactive", action="store_true",
+                        help="Enable interactive mode to ask preference questions")
+    parser.add_argument("-p", "--profile", default="profile.yml",
+                        help="Path to YAML profile file with preferences (default: profile.yml)")
 
     args = parser.parse_args()
 
@@ -890,8 +1030,8 @@ def main():
     print("=" * 50)
     print(f"Planning a {args.nights}-night trip from {args.start} to {args.end}")
 
-    # Get user preferences
-    preferences = ask_follow_up_questions()
+    # Get user preferences (either interactive or from profile)
+    preferences = get_user_preferences(interactive=args.interactive, profile_path=args.profile)
 
     print(f"\n🧠 Planning your tour itinerary (determining waypoints and overnight stops)...")
 
