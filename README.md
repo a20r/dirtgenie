@@ -38,8 +38,8 @@ An intelligent trip planner that creates detailed bikepacking itineraries using 
 
 ```bash
 # Clone the repository
-git clone https://github.com/a20r/DirtGenie.git
-cd DirtGenie
+git clone https://github.com/a20r/dirtgenie.git
+cd dirtgenie
 
 # Create virtual environment
 python -m venv .venv
@@ -157,7 +157,7 @@ docker run ghcr.io/a20r/dirtgenie:latest help
 ## 🏗️ Project Structure
 
 ```
-DirtGenie/
+dirtgenie/
 ├── src/dirtgenie/           # Main package
 │   ├── __init__.py          # Package initialization
 │   ├── planner.py           # Core planning logic (CLI)
