@@ -37,7 +37,7 @@ MANIFEST
 *.swo
 
 # Output directory for generated trips
-bikepacking_trips/
+dirtgenie_trips/
 trips/**/*
 
 # PyInstaller
@@ -122,7 +122,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Bikepacking Trip Planner specific files
-bikepacking_trip_*.md
-bikepacking_route_*.geojson
+# DirtGenie specific files
+dirtgenie_trip_*.md
+dirtgenie_route_*.geojson
 .api_keys

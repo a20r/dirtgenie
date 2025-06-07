@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Streamlit Web App for Bikepacking Trip Planner
+DirtGenie Web App
 
-A web interface that wraps around the bikepacking_planner.py CLI tool.
+A web interface that wraps around the DirtGenie CLI tool.
 """
 
 import json
@@ -15,7 +15,7 @@ import pandas as pd
 import pydeck as pdk
 import streamlit as st
 
-# Import our bikepacking planner modules
+# Import our DirtGenie modules
 try:
     # Try absolute import first (when package is installed)
     from dirtgenie.planner import (create_default_profile, create_geojson, generate_trip_plan,
@@ -140,13 +140,13 @@ def create_geojson_layer(geojson_data):
 def main():
     """Main Streamlit app."""
     st.set_page_config(
-        page_title="🚴‍♀️ Bikepacking Trip Planner",
+        page_title="🚴‍♀️ DirtGenie",
         page_icon="🚴‍♀️",
         layout="wide",
         initial_sidebar_state="expanded"
     )
 
-    st.title("🚴‍♀️ Bikepacking Trip Planner")
+    st.title("🚴‍♀️ DirtGenie")
     st.markdown("Plan your perfect bikepacking adventure with AI-powered route optimization!")
 
     # Sidebar for API keys
@@ -187,7 +187,7 @@ def main():
         start_location = st.text_input(
             "Start Location",
             placeholder="e.g., Boston, MA",
-            help="Starting point for your bikepacking trip"
+            help="Starting point for your adventure"
         )
 
     with col2:
@@ -327,7 +327,7 @@ def main():
             status_text.text("✅ Trip planning complete!")
 
             # Display results
-            st.success("🎉 Your bikepacking trip has been planned!")
+            st.success("🎉 Your adventure has been planned!")
 
             # Calculate total distance
             total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000
@@ -358,7 +358,7 @@ def main():
                 st.download_button(
                     label="💾 Download Trip Plan",
                     data=trip_plan,
-                    file_name=f"bikepacking_trip_{start_location.replace(' ', '_')}_to_{end_location.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
+                    file_name=f"dirtgenie_trip_{start_location.replace(' ', '_')}_to_{end_location.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
                     mime="text/markdown"
                 )
 
@@ -424,7 +424,7 @@ def main():
                 st.download_button(
                     label="💾 Download Route Data (GeoJSON)",
                     data=json.dumps(geojson_data, indent=2),
-                    file_name=f"bikepacking_route_{start_location.replace(' ', '_')}_to_{end_location.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.geojson",
+                    file_name=f"dirtgenie_route_{start_location.replace(' ', '_')}_to_{end_location.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.geojson",
                     mime="application/json"
                 )
 
@@ -454,7 +454,7 @@ def main():
             st.download_button(
                 label="💾 Download Trip Plan",
                 data=trip_data['trip_plan'],
-                file_name=f"bikepacking_trip_{trip_data['start_location'].replace(' ', '_')}_to_{trip_data['end_location'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
+                file_name=f"dirtgenie_trip_{trip_data['start_location'].replace(' ', '_')}_to_{trip_data['end_location'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
                 mime="text/markdown"
             )
 
@@ -521,14 +521,14 @@ def main():
             st.download_button(
                 label="💾 Download Route Data (GeoJSON)",
                 data=json.dumps(trip_data['geojson_data'], indent=2),
-                file_name=f"bikepacking_route_{trip_data['start_location'].replace(' ', '_')}_to_{trip_data['end_location'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.geojson",
+                file_name=f"dirtgenie_route_{trip_data['start_location'].replace(' ', '_')}_to_{trip_data['end_location'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.geojson",
                 mime="application/json"
             )
 
     # Footer
     st.markdown("---")
     st.markdown("""
-    **🚴‍♀️ Bikepacking Trip Planner** - Plan your perfect bikepacking adventure with AI-powered route optimization!
+    **🚴‍♀️ DirtGenie** - Plan your perfect bikepacking adventure with AI-powered route optimization!
     
     Features:
     - 🧠 AI-powered itinerary planning

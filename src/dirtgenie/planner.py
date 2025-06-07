@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Bikepacking Trip Planner
+DirtGenie - AI-Powered Trip Planner
 
 An intelligent trip planner that uses OpenAI's API to create detailed bikepacking itineraries
 with route information from Google Maps.
@@ -224,7 +224,7 @@ def save_profile(profile_data: Dict[str, Any], profile_path: str) -> None:
     profile_file.parent.mkdir(parents=True, exist_ok=True)
 
     # Create a well-documented YAML file
-    yaml_content = f"""# Bikepacking Trip Planner Profile
+    yaml_content = f"""# DirtGenie Profile
 # Edit this file to customize your default trip preferences
 
 # Accommodation preference: camping, hotels, or mixed
@@ -279,7 +279,7 @@ def ask_follow_up_questions() -> Dict[str, str]:
     Returns:
         Dictionary of user preferences
     """
-    print("\n🏕️  Let's customize your bikepacking adventure!")
+    print("\n🏕️  Let's customize your adventure!")
     print("I'll ask you a few questions to tailor the perfect trip for you.\n")
 
     preferences = {}
@@ -788,7 +788,7 @@ def generate_trip_plan_fallback(start: str, end: str, nights: int, preferences: 
     # Create a simple trip plan based on the itinerary
     daily_plans = itinerary.get('itinerary', {})
 
-    trip_plan = f"""# Bikepacking Trip: {start} to {end}
+    trip_plan = f"""# DirtGenie Trip: {start} to {end}
 
 ## Trip Overview
 - **Duration**: {nights} nights ({nights + 1} days)
@@ -1117,12 +1117,12 @@ def save_outputs(trip_plan: str, geojson_data: Dict[str, Any], start: str, end: 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # Save markdown file
-    md_filename = f"bikepacking_trip_{safe_start}_to_{safe_end}_{timestamp}.md"
+    md_filename = f"dirtgenie_trip_{safe_start}_to_{safe_end}_{timestamp}.md"
     with open(md_filename, 'w', encoding='utf-8') as f:
         f.write(trip_plan)
 
     # Save GeoJSON file
-    geojson_filename = f"bikepacking_route_{safe_start}_to_{safe_end}_{timestamp}.geojson"
+    geojson_filename = f"dirtgenie_route_{safe_start}_to_{safe_end}_{timestamp}.geojson"
     with open(geojson_filename, 'w', encoding='utf-8') as f:
         json.dump(geojson_data, f, indent=2, ensure_ascii=False)
 
@@ -1275,7 +1275,7 @@ Make the revisions thoughtfully and provide a comprehensive updated plan that ad
 
 def main():
     """
-    Main function to run the bikepacking trip planner.
+    Main function to run the DirtGenie trip planner.
     """
     # Initialize API clients first
     try:
@@ -1285,7 +1285,7 @@ def main():
         print("Please set up your API keys and try again.")
         return
 
-    parser = argparse.ArgumentParser(description="Intelligent Bikepacking Trip Planner")
+    parser = argparse.ArgumentParser(description="DirtGenie - AI-Powered Trip Planner")
     parser.add_argument("start", help="Starting location")
     parser.add_argument("end", help="Ending location")
     parser.add_argument("nights", type=int, help="Number of nights for the trip")
