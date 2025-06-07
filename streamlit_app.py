@@ -373,9 +373,10 @@ def main():
                             )
                             st.session_state.trip_data['trip_plan'] = revised_plan
                             st.success("✅ Plan revised! Check the updated trip plan above.")
-                            st.rerun()
                         except Exception as e:
                             st.error(f"❌ Error revising plan: {str(e)}")
+                            return
+                        st.rerun()
 
             with tab2:
                 # Create map visualization
@@ -469,9 +470,10 @@ def main():
                         )
                         st.session_state.trip_data['trip_plan'] = revised_plan
                         st.success("✅ Plan revised! The updated trip plan is shown above.")
-                        st.rerun()
                     except Exception as e:
                         st.error(f"❌ Error revising plan: {str(e)}")
+                        return
+                    st.rerun()
 
         with tab2:
             # Create map visualization
