@@ -62,22 +62,22 @@ def show_examples():
     examples = [
         {
             "title": "Weekend Wine Country Trip",
-            "command": "python bikepacking_planner.py 'Sonoma, CA' 'Napa, CA' 2",
+            "command": "python src/dirtgenie/planner.py --start 'Sonoma, CA' --end 'Napa, CA' --nights 2",
             "description": "Short scenic trip through California wine country"
         },
         {
             "title": "Pacific Coast Adventure",
-            "command": "python bikepacking_planner.py 'San Francisco, CA' 'Los Angeles, CA' 7",
+            "command": "python src/dirtgenie/planner.py --start 'San Francisco, CA' --end 'Los Angeles, CA' --nights 7",
             "description": "Classic week-long Pacific Coast ride"
         },
         {
             "title": "Desert Southwest Journey",
-            "command": "python bikepacking_planner.py 'Flagstaff, AZ' 'Moab, UT' 5",
+            "command": "python src/dirtgenie/planner.py --start 'Flagstaff, AZ' --end 'Moab, UT' --nights 5",
             "description": "Stunning desert landscapes and red rock country"
         },
         {
             "title": "New England Fall Colors",
-            "command": "python bikepacking_planner.py 'Boston, MA' 'Burlington, VT' 4",
+            "command": "python src/dirtgenie/planner.py --start 'Boston, MA' --end 'Burlington, VT' --nights 4",
             "description": "Beautiful autumn foliage tour"
         }
     ]

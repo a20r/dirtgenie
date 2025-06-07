@@ -4,10 +4,13 @@ Simple test to validate the improved closed-loop planning with actual API calls.
 This will require real API keys but will show if the improvements work.
 """
 
-from bikepacking_planner import initialize_clients, plan_tour_itinerary
 import os
 import sys
 from pathlib import Path
+
+# Add the src directory to the path so we can import our module
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+from dirtgenie.planner import initialize_clients, plan_tour_itinerary
 
 # Load environment from .env if it exists
 env_file = Path(".env")

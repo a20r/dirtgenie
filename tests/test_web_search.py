@@ -3,10 +3,13 @@
 Test script to verify web search functionality in the bikepacking planner.
 """
 
-from bikepacking_planner import generate_trip_plan, initialize_clients, plan_tour_itinerary
 import os
 import sys
 from pathlib import Path
+
+# Add the src directory to the path so we can import our module
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+from dirtgenie.planner import generate_trip_plan, initialize_clients, plan_tour_itinerary
 
 # Add the current directory to the path so we can import our module
 sys.path.append(str(Path(__file__).parent))

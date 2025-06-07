@@ -38,7 +38,7 @@ case "${1}" in
         echo "  docker run -p 8501:8501 dirtgenie"
         echo ""
         echo "  # Run CLI command"
-        echo "  docker run -v \$(pwd):/data dirtgenie cli --start 'Berlin' --end 'Prague' --days 7"
+        echo "  docker run -v \$(pwd):/data dirtgenie cli --start 'Berlin' --end 'Prague' --nights 7"
         echo ""
         echo "  # Interactive shell"
         echo "  docker run -it dirtgenie shell"

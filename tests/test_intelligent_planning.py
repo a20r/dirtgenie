@@ -5,9 +5,13 @@ Tests the 3-step approach: Plan → Route → Generate
 """
 
 import json
+import sys
+from pathlib import Path
 from typing import Any, Dict
 
-from bikepacking_planner import (create_geojson, extract_overnight_locations, get_multi_waypoint_directions,
+# Add the src directory to the path so we can import our module
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+from dirtgenie.planner import (create_geojson, extract_overnight_locations, get_multi_waypoint_directions,
                                  plan_tour_itinerary)
 
 

@@ -83,10 +83,10 @@ Open your browser to `http://localhost:8501` and start planning!
 
 ```bash
 # Plan a trip from command line
-python src/dirtgenie/planner.py "San Francisco, CA" "Los Angeles, CA" 7
+python src/dirtgenie/planner.py --start "San Francisco, CA" --end "Los Angeles, CA" --nights 7
 
 # Or use the convenience script
-./scripts/dirtgenie "Portland, OR" "Seattle, WA" 5
+./scripts/dirtgenie --start "Portland, OR" --end "Seattle, WA" --nights 5
 ```
 
 ## 🐳 Docker Quick Start
@@ -119,7 +119,7 @@ docker run -p 8501:8501 \
 docker run -v $(pwd):/data \
   -e OPENAI_API_KEY=your_openai_key \
   -e GOOGLE_MAPS_API_KEY=your_google_key \
-  ghcr.io/a20r/dirtgenie:latest cli --start "Berlin" --end "Prague" --days 7
+  ghcr.io/a20r/dirtgenie:latest cli --start "Berlin" --end "Prague" --nights 7
 
 # Interactive shell
 docker run -it \
@@ -145,13 +145,13 @@ docker run ghcr.io/a20r/dirtgenie:latest help
 
 ```bash
 # Weekend wine country tour
-./scripts/dirtgenie "Sonoma, CA" "Napa, CA" 2
+./scripts/dirtgenie --start "Sonoma, CA" --end "Napa, CA" --nights 2
 
 # Cross-state adventure
-./scripts/dirtgenie "Denver, CO" "Moab, UT" 10
+./scripts/dirtgenie --start "Denver, CO" --end "Moab, UT" --nights 10
 
 # Pacific Coast classic
-./scripts/dirtgenie "San Francisco, CA" "Los Angeles, CA" 14
+./scripts/dirtgenie --start "San Francisco, CA" --end "Los Angeles, CA" --nights 14
 ```
 
 ## 🏗️ Project Structure

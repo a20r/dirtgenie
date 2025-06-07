@@ -5,9 +5,13 @@ This allows testing the core functionality without API keys
 """
 
 import json
+import sys
 from datetime import datetime
+from pathlib import Path
 
-from bikepacking_planner import ask_follow_up_questions, create_geojson, extract_route_points, save_outputs
+# Add the src directory to the path so we can import our module
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+from dirtgenie.planner import ask_follow_up_questions, create_geojson, extract_route_points, save_outputs
 
 # Mock Google Maps directions response
 MOCK_DIRECTIONS = {
@@ -141,7 +145,7 @@ def test_core_functionality():
     print(f"\n🎉 All core functionality tests passed!")
     print(f"The script structure is working correctly.")
     print(f"To use with real data, set up your API keys and run:")
-    print(f"python bikepacking_planner.py '{start}' '{end}' {nights}")
+    print(f"python src/dirtgenie/planner.py --start '{start}' --end '{end}' --nights {nights}")
 
 
 if __name__ == "__main__":

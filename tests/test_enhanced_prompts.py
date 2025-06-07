@@ -7,7 +7,9 @@ import os
 import sys
 from pathlib import Path
 
-from bikepacking_planner import initialize_clients, plan_tour_itinerary
+# Add the src directory to the path so we can import our module
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+from dirtgenie.planner import initialize_clients, plan_tour_itinerary
 
 # Add the current directory to the path so we can import our module
 sys.path.append(str(Path(__file__).parent))
@@ -100,7 +102,7 @@ def test_prompt_content():
 
     # This is a bit of a hack - we'll check if the functions contain the right keywords
     # by looking at the source code
-    with open('/Users/fiona/code/adventure/bikepacking_planner.py', 'r') as f:
+    with open('src/dirtgenie/planner.py', 'r') as f:
         content = f.read()
 
     search_keywords = [

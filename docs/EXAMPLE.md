@@ -39,7 +39,7 @@ export GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
 
 ### 3. Plan Your First Trip
 ```bash
-python bikepacking_planner.py "Portland, OR" "Seattle, WA" 5
+python src/dirtgenie/planner.py --start "Portland, OR" --end "Seattle, WA" --nights 5
 ```
 
 The script will:
@@ -51,7 +51,7 @@ The script will:
 ## 📋 Example Usage Session
 
 ```bash
-$ python bikepacking_planner.py "San Francisco, CA" "Los Angeles, CA" 7
+$ python src/dirtgenie/planner.py --start "San Francisco, CA" --end "Los Angeles, CA" --nights 7
 
 🚴‍♀️ Bikepacking Trip Planner
 ==================================================

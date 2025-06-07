@@ -5,6 +5,7 @@ Test the improved closed-loop tour planning functionality.
 
 import os
 import sys
+from pathlib import Path
 
 # Add the current directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -12,7 +13,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def test_closed_loop_prompt():
     """Test the improved closed-loop prompt generation."""
-    from bikepacking_planner import plan_tour_itinerary
+    # Add the src directory to the path so we can import our module
+    sys.path.append(str(Path(__file__).parent.parent / "src"))
+    from dirtgenie.planner import plan_tour_itinerary
 
     # Mock data
     start_location = "Cambridge, MA"
@@ -31,7 +34,7 @@ def test_closed_loop_prompt():
     # Import the required modules and set up mocking
     from unittest.mock import MagicMock, patch
 
-    import bikepacking_planner
+    import dirtgenie.planner
 
     # Mock OpenAI response
     mock_response = MagicMock()
@@ -105,7 +108,7 @@ def test_closed_loop_prompt():
     mock_openai_client = MagicMock()
     mock_openai_client.chat.completions.create.return_value = mock_response
 
-    with patch.object(bikepacking_planner, 'openai_client', mock_openai_client):
+    with patch.object(dirtgenie.planner, 'openai_client', mock_openai_client):
         try:
             result = plan_tour_itinerary(start_location, end_location, nights, preferences)
 

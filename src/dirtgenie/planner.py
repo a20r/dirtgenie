@@ -1286,9 +1286,9 @@ def main():
         return
 
     parser = argparse.ArgumentParser(description="DirtGenie - AI-Powered Trip Planner")
-    parser.add_argument("start", help="Starting location")
-    parser.add_argument("end", help="Ending location")
-    parser.add_argument("nights", type=int, help="Number of nights for the trip")
+    parser.add_argument("--start", required=True, help="Starting location")
+    parser.add_argument("--end", required=True, help="Ending location")
+    parser.add_argument("--nights", type=int, required=True, help="Number of nights for the trip")
     parser.add_argument("-i", "--interactive", action="store_true",
                         help="Enable interactive mode to ask preference questions")
     parser.add_argument("-p", "--profile", default="profile.yml",

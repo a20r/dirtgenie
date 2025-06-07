@@ -4,10 +4,15 @@ Test script for closed-loop tour planning functionality.
 Tests the ability to detect same start/end locations and plan balanced loops.
 """
 
-from bikepacking_planner import (create_geojson, generate_trip_plan, get_multi_waypoint_directions, load_profile,
-                                 plan_tour_itinerary)
-import bikepacking_planner
 import os
+import sys
+from pathlib import Path
+
+# Add the src directory to the path so we can import our module
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+from dirtgenie.planner import (create_geojson, generate_trip_plan, get_multi_waypoint_directions, load_profile,
+                                 plan_tour_itinerary)
+import dirtgenie.planner
 import sys
 import tempfile
 from unittest.mock import MagicMock, patch
@@ -93,7 +98,7 @@ This creates a balanced triangle route with manageable daily distances."""
     mock_openai_client = MagicMock()
     mock_openai_client.chat.completions.create.return_value = mock_closed_loop_response
 
-    with patch.object(bikepacking_planner, 'openai_client', mock_openai_client):
+    with patch.object(dirtgenie.planner, 'openai_client', mock_openai_client):
         with patch('requests.get') as mock_requests:
             mock_requests.return_value.json.return_value = mock_directions_response
             mock_requests.return_value.status_code = 200

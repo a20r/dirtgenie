@@ -33,7 +33,7 @@ if [ -f .env ]; then
     echo "📄 Found existing .env file with API keys"
     echo "🚀 Choose how to run DirtGenie:"
     echo "   1) Web App (Recommended): streamlit run src/dirtgenie/web_app.py"
-    echo "   2) CLI Tool: ./scripts/dirtgenie 'Start Location' 'End Location' nights"
+    echo "   2) CLI Tool: ./scripts/dirtgenie --start 'Start Location' --end 'End Location' --nights number"
     echo ""
 else
     echo "🔑 API keys not found. Let's set them up..."
@@ -63,7 +63,7 @@ EOF
     echo ""
     echo "🚀 Choose how to run DirtGenie:"
     echo "   1) Web App (Recommended): streamlit run src/dirtgenie/web_app.py"
-    echo "   2) CLI Tool: ./scripts/dirtgenie 'Start Location' 'End Location' nights"
+    echo "   2) CLI Tool: ./scripts/dirtgenie --start 'Start Location' --end 'End Location' --nights number"
     echo ""
 fi
 

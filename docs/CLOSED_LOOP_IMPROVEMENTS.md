@@ -63,7 +63,7 @@ Day 6: 45km SW → Home (45km ✅)
 ```
 
 ## Code Changes
-Modified the `plan_tour_itinerary()` function in `bikepacking_planner.py`:
+Modified the `plan_tour_itinerary()` function in `src/dirtgenie/planner.py`:
 
 1. **Added radius calculation** for closed-loop tours
 2. **Enhanced prompt** with validation requirements

@@ -3,7 +3,12 @@
 Demo script to show the new overnight markers functionality
 """
 
-from bikepacking_planner import create_geojson, extract_overnight_locations
+import sys
+from pathlib import Path
+
+# Add the src directory to the path so we can import our module
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+from dirtgenie.planner import create_geojson, extract_overnight_locations
 
 # Mock directions data with some valid polyline data
 MOCK_DIRECTIONS = {

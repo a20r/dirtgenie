@@ -4,9 +4,13 @@ Test script for the new profile and interactive functionality.
 """
 
 import os
+import sys
 import tempfile
+from pathlib import Path
 
-from bikepacking_planner import get_user_preferences, load_profile, save_profile
+# Add the src directory to the path so we can import our module
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+from dirtgenie.planner import get_user_preferences, load_profile, save_profile
 
 
 def test_profile_functionality():
@@ -91,10 +95,10 @@ def test_profile_functionality():
     import argparse
     from unittest.mock import patch
 
-    import bikepacking_planner
+    import dirtgenie.planner
 
     # Mock sys.argv to test argument parsing
-    test_args = ['bikepacking_planner.py', 'Boston, MA', 'Portland, ME', '2', '--interactive', '--profile', 'test.yml']
+    test_args = ['src/dirtgenie/planner.py', '--start', 'Boston, MA', '--end', 'Portland, ME', '--nights', '2', '--interactive', '--profile', 'test.yml']
 
     with patch('sys.argv', test_args):
         try:

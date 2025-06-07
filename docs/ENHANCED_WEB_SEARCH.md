@@ -79,7 +79,7 @@ This enhancement significantly improves the accuracy and usefulness of the gener
 
 ## Files Modified
 
-- `/Users/fiona/code/adventure/bikepacking_planner.py` - Enhanced prompts and system messages
+- `/Users/fiona/code/dirtgenie/src/dirtgenie/planner.py` - Enhanced prompts and system messages
 - `/Users/fiona/code/adventure/test_enhanced_prompts.py` - Verification test script
 
 ## Next Steps
