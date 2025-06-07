@@ -582,7 +582,8 @@ IMPORTANT: Use web search to find:
         response = openai_client.chat.completions.create(
             model="gpt-4.1",
             messages=[
-                {"role": "system", "content": "You are an expert bikepacking tour planner with access to current web information. Always respond with valid JSON exactly as requested. IMPORTANT: Use your web search capabilities to find current information about: 1) Specific accommodations (campgrounds, hotels, hostels) with availability, pricing, and booking details, 2) Current weather forecasts for the planned travel dates and locations, 3) Trail conditions and any closures, 4) Local attractions and their current operating status. Search for real, specific places and current information."},
+                {"role": "system",
+                    "content": "You are an expert bikepacking tour planner with access to current web information. Always respond with valid JSON exactly as requested. IMPORTANT: Use your web search capabilities to find current information about: 1) Specific accommodations (campgrounds, hotels, hostels) with availability, pricing, and booking details, 2) Current weather forecasts for the planned travel dates and locations, 3) Trail conditions and any closures, 4) Local attractions and their current operating status. Search for real, specific places and current information."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
@@ -758,7 +759,8 @@ Make this a comprehensive, actionable plan that follows the planned itinerary an
         response = openai_client.chat.completions.create(
             model="gpt-4.1",
             messages=[
-                {"role": "system", "content": "You are an expert bikepacking guide with extensive knowledge of routes, gear, safety, and local attractions worldwide. You have access to current web information and should search for up-to-date details about: 1) WEATHER - Get detailed forecasts for all locations and travel dates, 2) ACCOMMODATIONS - Find specific places to stay with current availability, pricing, and booking information, 3) Trail conditions, closures, and safety alerts, 4) Local services (bike shops, restaurants, stores) with current hours and status. Always provide current, accurate, searchable information in your recommendations."},
+                {"role": "system",
+                    "content": "You are an expert bikepacking guide with extensive knowledge of routes, gear, safety, and local attractions worldwide. You have access to current web information and should search for up-to-date details about: 1) WEATHER - Get detailed forecasts for all locations and travel dates, 2) ACCOMMODATIONS - Find specific places to stay with current availability, pricing, and booking information, 3) Trail conditions, closures, and safety alerts, 4) Local services (bike shops, restaurants, stores) with current hours and status. Always provide current, accurate, searchable information in your recommendations."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
@@ -808,7 +810,7 @@ def generate_trip_plan_fallback(start: str, end: str, nights: int, preferences: 
             overnight_location_str = overnight_location.get('name', str(overnight_location))
         else:
             overnight_location_str = str(overnight_location)
-            
+
         trip_plan += f"""
 ### Day {day_num}: {day_plan['start_location']} to {day_plan['end_location']}
 - **Distance**: {day_plan.get('estimated_distance_km', 'TBD')} km
@@ -861,13 +863,13 @@ def extract_overnight_locations(trip_plan: str, itinerary: Optional[Dict[str, An
         for day_key in sorted(daily_plans.keys()):
             day_plan = daily_plans[day_key]
             overnight_location = day_plan.get('overnight_location', '')
-            
+
             # Handle both string and dict formats for overnight_location
             if isinstance(overnight_location, dict):
                 overnight_location_str = overnight_location.get('name', str(overnight_location))
             else:
                 overnight_location_str = str(overnight_location)
-                
+
             if overnight_location_str and overnight_location_str != "Arrive at destination":
                 overnight_locations.append(overnight_location_str)
         return overnight_locations
@@ -1018,7 +1020,7 @@ def create_geojson(start: str, end: str, directions: Dict[str, Any],
                     overnight_location_str = overnight_location.get('name', str(overnight_location))
                 else:
                     overnight_location_str = str(overnight_location)
-                
+
                 if 'arrive at destination' in overnight_location_str.lower() or day_key == max(daily_plans.keys()):
                     continue
 
@@ -1184,6 +1186,91 @@ def openai_function_get_bicycle_route(start: str, end: str, waypoints: Optional[
         return json.dumps(route_info)
     except Exception as e:
         return json.dumps({"error": str(e)})
+
+
+def revise_trip_plan_with_feedback(original_plan: str, feedback: str, start: str, end: str,
+                                   nights: int, preferences: Dict[str, str],
+                                   itinerary: Dict[str, Any], directions: Dict[str, Any]) -> str:
+    """
+    Revise a trip plan based on user feedback.
+
+    Args:
+        original_plan: The original trip plan markdown
+        feedback: User feedback about what to change
+        start: Starting location
+        end: Ending location
+        nights: Number of nights
+        preferences: User preferences
+        itinerary: Planned itinerary with waypoints
+        directions: Google Maps directions data
+
+    Returns:
+        Revised trip plan as markdown string
+    """
+    if not openai_client:
+        raise ValueError("OpenAI client not initialized. Please set OPENAI_API_KEY.")
+
+    # Extract route information
+    total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000
+    total_duration = sum(leg['duration']['value'] for leg in directions['legs']) / 3600
+
+    prompt = f"""
+You are an expert bikepacking trip planner with access to current web information. A user has reviewed their trip plan and provided feedback. Please revise the plan based on their specific feedback while maintaining the overall route structure.
+
+ORIGINAL TRIP PLAN:
+{original_plan}
+
+USER FEEDBACK:
+{feedback}
+
+ROUTE INFORMATION:
+- Start: {start}
+- End: {end}
+- Duration: {nights} nights
+- Total distance: {total_distance:.1f} km
+- Estimated cycling time: {total_duration:.1f} hours
+
+PLANNED ITINERARY:
+{json.dumps(itinerary, indent=2)}
+
+USER PREFERENCES:
+- Accommodation: {preferences.get('accommodation', 'mixed')}
+- Stealth camping allowed: {preferences.get('stealth_camping', False)}
+- Fitness level: {preferences.get('fitness_level', 'intermediate')}
+- Daily distance preference: {preferences.get('daily_distance', '50-80')} km
+- Terrain preference: {preferences.get('terrain', 'mixed')}
+- Budget: {preferences.get('budget', 'moderate')}
+- Interests: {', '.join(preferences.get('interests', []))}
+
+INSTRUCTIONS:
+1. Carefully read and understand the user's feedback
+2. Address their specific concerns or requests
+3. If they want changes to accommodations, search for specific alternatives with current availability and pricing
+4. If they want route modifications, suggest realistic alternatives within the existing framework
+5. If they want different activities or points of interest, search for current options
+6. Maintain the overall structure and quality of the trip plan
+7. Use web search to find current, up-to-date information for any new recommendations
+8. Keep the same markdown format and level of detail
+9. Clearly indicate what changes were made in response to their feedback
+
+Make the revisions thoughtfully and provide a comprehensive updated plan that addresses their feedback while maintaining trip quality and feasibility.
+"""
+
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are an expert bikepacking guide with access to current web information. You excel at incorporating user feedback to improve trip plans while maintaining quality and feasibility. Always search for current information when making changes to accommodations, routes, or activities."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=4000,
+            temperature=0.7
+        )
+
+        return response.choices[0].message.content or "Error: Empty response from OpenAI"
+    except Exception as e:
+        print(f"Error revising trip plan: {e}")
+        return f"Error revising trip plan: {str(e)}. Please try again with different feedback."
 
 
 def main():
