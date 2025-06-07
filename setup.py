@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Setup script for DirtGenie."""
 
-from setuptools import setup, find_packages
 from pathlib import Path
+
+from setuptools import find_packages, setup
 
 # Read the README file
 this_directory = Path(__file__).parent
@@ -13,8 +14,8 @@ requirements = (this_directory / "requirements.txt").read_text().strip().split('
 
 setup(
     name="dirtgenie",
-    version="1.0.0",
-    author="Alex Roper",
+    version="0.1.0",
+    author="Alex Wallar",
     author_email="a20r@example.com",
     description="AI-Powered Bikepacking Trip Planner",
     long_description=long_description,

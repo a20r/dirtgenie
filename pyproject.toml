@@ -4,14 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dirtgenie"
-version = "1.0.0"
+version = "0.1.0"
 description = "AI-Powered Bikepacking Trip Planner"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {file = "LICENSE"}
-authors = [
-    {name = "Alex Roper", email = "a20r@example.com"},
-]
+license = { file = "LICENSE" }
+authors = [{ name = "Alex Roper", email = "a20r@example.com" }]
 keywords = ["bikepacking", "trip-planning", "ai", "cycling", "travel"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -36,13 +34,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=6.0",
-    "pytest-cov",
-    "black",
-    "flake8",
-    "mypy",
-]
+dev = ["pytest>=6.0", "pytest-cov", "black", "flake8", "mypy"]
 
 [project.urls]
 Homepage = "https://github.com/a20r/DirtGenie"

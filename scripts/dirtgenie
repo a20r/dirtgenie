@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """CLI entry point for DirtGenie."""
 
+from dirtgenie.planner import main
 import sys
 from pathlib import Path
 
@@ -8,7 +9,6 @@ from pathlib import Path
 src_dir = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(src_dir))
 
-from dirtgenie.planner import main
 
 if __name__ == "__main__":
     main()

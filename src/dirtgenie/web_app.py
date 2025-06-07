@@ -16,9 +16,15 @@ import pydeck as pdk
 import streamlit as st
 
 # Import our bikepacking planner modules
-from .planner import (create_default_profile, create_geojson, generate_trip_plan,
-                      get_multi_waypoint_directions, initialize_clients, plan_tour_itinerary,
-                      revise_trip_plan_with_feedback)
+try:
+    # Try absolute import first (when package is installed)
+    from dirtgenie.planner import (create_default_profile, create_geojson, generate_trip_plan,
+                                   get_multi_waypoint_directions, initialize_clients, plan_tour_itinerary,
+                                   revise_trip_plan_with_feedback)
+except ImportError:
+    # Fall back to relative import (when running directly)
+    from .planner import (create_default_profile, create_geojson, generate_trip_plan, get_multi_waypoint_directions,
+                          initialize_clients, plan_tour_itinerary, revise_trip_plan_with_feedback)
 
 
 def load_env_api_keys():
@@ -330,7 +336,7 @@ def main():
             # Store data in session state for feedback functionality
             if 'trip_data' not in st.session_state:
                 st.session_state.trip_data = {}
-            
+
             st.session_state.trip_data = {
                 'start_location': start_location,
                 'end_location': end_location,
@@ -344,10 +350,10 @@ def main():
 
             # Create tabs for better layout
             tab1, tab2 = st.tabs(["📄 Trip Plan", "🗺️ Route Map"])
-            
+
             with tab1:
                 st.markdown(trip_plan)
-                
+
                 # Download button for markdown
                 st.download_button(
                     label="💾 Download Trip Plan",
@@ -355,7 +361,7 @@ def main():
                     file_name=f"bikepacking_trip_{start_location.replace(' ', '_')}_to_{end_location.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
                     mime="text/markdown"
                 )
-                
+
                 # Feedback section
                 st.header("💬 Feedback & Revisions")
                 feedback = st.text_area(
@@ -363,12 +369,12 @@ def main():
                     placeholder="e.g., 'I'd prefer more camping options instead of hotels' or 'Can we add more scenic stops along the route?' or 'The daily distances seem too long for my fitness level'",
                     help="Provide specific feedback about what you'd like to change in your trip plan"
                 )
-                
+
                 if st.button("🔄 Revise Plan", disabled=not feedback):
                     with st.spinner("🤖 Revising your trip plan based on feedback..."):
                         try:
                             revised_plan = revise_trip_plan_with_feedback(
-                                trip_plan, feedback, start_location, end_location, 
+                                trip_plan, feedback, start_location, end_location,
                                 nights, preferences, itinerary, directions
                             )
                             st.session_state.trip_data['trip_plan'] = revised_plan
@@ -433,17 +439,17 @@ def main():
     elif 'trip_data' in st.session_state and st.session_state.trip_data:
         st.header("📋 Your Current Trip Plan")
         trip_data = st.session_state.trip_data
-        
+
         # Display current trip metrics
         total_distance = sum(leg['distance']['value'] for leg in trip_data['directions']['legs']) / 1000
         st.metric("Total Distance", f"{total_distance:.1f} km")
-        
+
         # Create tabs for better layout
         tab1, tab2 = st.tabs(["📄 Trip Plan", "🗺️ Route Map"])
-        
+
         with tab1:
             st.markdown(trip_data['trip_plan'])
-            
+
             # Download button for markdown
             st.download_button(
                 label="💾 Download Trip Plan",
@@ -451,7 +457,7 @@ def main():
                 file_name=f"bikepacking_trip_{trip_data['start_location'].replace(' ', '_')}_to_{trip_data['end_location'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
                 mime="text/markdown"
             )
-            
+
             # Feedback section
             st.header("💬 Feedback & Revisions")
             feedback = st.text_area(
@@ -459,13 +465,13 @@ def main():
                 placeholder="e.g., 'I'd prefer more camping options instead of hotels' or 'Can we add more scenic stops along the route?' or 'The daily distances seem too long for my fitness level'",
                 help="Provide specific feedback about what you'd like to change in your trip plan"
             )
-            
+
             if st.button("🔄 Revise Plan", disabled=not feedback):
                 with st.spinner("🤖 Revising your trip plan based on feedback..."):
                     try:
                         revised_plan = revise_trip_plan_with_feedback(
-                            trip_data['trip_plan'], feedback, trip_data['start_location'], 
-                            trip_data['end_location'], trip_data['nights'], trip_data['preferences'], 
+                            trip_data['trip_plan'], feedback, trip_data['start_location'],
+                            trip_data['end_location'], trip_data['nights'], trip_data['preferences'],
                             trip_data['itinerary'], trip_data['directions']
                         )
                         st.session_state.trip_data['trip_plan'] = revised_plan
