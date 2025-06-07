@@ -14,13 +14,13 @@ requirements = (this_directory / "requirements.txt").read_text().strip().split('
 
 setup(
     name="dirtgenie",
-    version="0.1.0",
+    version="0.2.1",
     author="Alex Wallar",
-    author_email="a20r@example.com",
+    author_email="alex@wallar.me",
     description="AI-Powered Bikepacking Trip Planner",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/a20r/DirtGenie",
+    url="https://github.com/a20r/dirtgenie",
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     classifiers=[
