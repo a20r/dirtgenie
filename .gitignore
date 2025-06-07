@@ -30,6 +30,12 @@ wheels/
 *.egg
 MANIFEST
 
+# Development
+.vscode/
+.idea/
+*.swp
+*.swo
+
 # Output directory for generated trips
 bikepacking_trips/
 trips/**/*
