@@ -5,7 +5,7 @@ An intelligent trip planner that creates detailed bikepacking itineraries
 using OpenAI's GPT models and Google Maps routing data.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.3.0"
 __author__ = "Alex Wallar"
 __email__ = "alex@wallar.me"
 
