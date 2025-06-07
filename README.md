@@ -89,6 +89,48 @@ python src/dirtgenie/planner.py "San Francisco, CA" "Los Angeles, CA" 7
 ./scripts/dirtgenie "Portland, OR" "Seattle, WA" 5
 ```
 
+## 🐳 Docker Quick Start
+
+### Run with Docker (Recommended)
+
+```bash
+# Run the web app
+docker run -p 8501:8501 \
+  -e OPENAI_API_KEY=your_openai_key_here \
+  -e GOOGLE_MAPS_API_KEY=your_google_key_here \
+  ghcr.io/a20r/dirtgenie:latest
+
+# Or use docker-compose for easier management
+echo "OPENAI_API_KEY=your_openai_key_here" > .env
+echo "GOOGLE_MAPS_API_KEY=your_google_key_here" >> .env
+docker-compose up dirtgenie-web
+```
+
+### Docker Commands
+
+```bash
+# Start web interface
+docker run -p 8501:8501 \
+  -e OPENAI_API_KEY=your_openai_key \
+  -e GOOGLE_MAPS_API_KEY=your_google_key \
+  ghcr.io/a20r/dirtgenie:latest web
+
+# Run CLI command
+docker run -v $(pwd):/data \
+  -e OPENAI_API_KEY=your_openai_key \
+  -e GOOGLE_MAPS_API_KEY=your_google_key \
+  ghcr.io/a20r/dirtgenie:latest cli --start "Berlin" --end "Prague" --days 7
+
+# Interactive shell
+docker run -it \
+  -e OPENAI_API_KEY=your_openai_key \
+  -e GOOGLE_MAPS_API_KEY=your_google_key \
+  ghcr.io/a20r/dirtgenie:latest shell
+
+# Show help
+docker run ghcr.io/a20r/dirtgenie:latest help
+```
+
 ## 📖 Usage Examples
 
 ### Web Interface
