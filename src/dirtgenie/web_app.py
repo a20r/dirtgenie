@@ -351,7 +351,7 @@ def main():
             # Create tabs for better layout
             tab1, tab2 = st.tabs(["📄 Trip Plan", "🗺️ Route Map"])
 
-            with tab1:
+            with tab1, st.container(border=True):
                 st.markdown(trip_plan)
 
                 # Download button for markdown
