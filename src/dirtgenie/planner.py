@@ -342,7 +342,7 @@ def ask_follow_up_questions() -> Dict[str, str]:
     return preferences
 
 
-def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str, str]) -> Dict[str, Any]:
+def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str, str], departure_date: Optional[str] = None) -> Dict[str, Any]:
     """
     First step: Plan the tour itinerary with specific waypoints and overnight stops.
     This determines WHERE to go before figuring out HOW to get there.
@@ -352,6 +352,7 @@ def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str
         end: Ending location
         nights: Number of nights
         preferences: User preferences from follow-up questions
+        departure_date: Optional departure date (format: YYYY-MM-DD)
 
     Returns:
         Dictionary containing planned itinerary with waypoints and overnight stops
@@ -420,6 +421,7 @@ TRIP PARAMETERS:
 - Duration: {nights} nights ({nights + 1} days)
 - Daily distance preference: {daily_distance} km per day
 - Estimated total loop distance: {total_distance:.0f} km
+- Departure date: {departure_date if departure_date else "Not specified"}
 
 USER PREFERENCES:
 - Accommodation: {preferences.get('accommodation', 'mixed')}
@@ -500,10 +502,11 @@ IMPORTANT: Every overnight location MUST be positioned such that:
 This ensures you can always get back within your daily distance constraints.
 
 SEARCH REQUIREMENTS:
-- Search for current weather forecasts for all planned locations and travel dates
+- Search for current weather forecasts for all planned locations and travel dates{f" (starting {departure_date})" if departure_date else ""}
 - Find specific, bookable accommodations with current availability and pricing
 - Verify trail conditions and any seasonal closures or restrictions
 - Look up local services and attractions with current operating information
+- Check for seasonal events, festivals, or special conditions during the planned travel period
 """
     else:
         prompt = f"""
@@ -515,6 +518,7 @@ TRIP PARAMETERS:
 - Duration: {nights} nights ({nights + 1} days)
 - Rough total distance: {total_distance:.0f} km
 - Daily distance preference: {daily_distance} km per day
+- Departure date: {departure_date if departure_date else "Not specified"}
 
 USER PREFERENCES:
 - Accommodation: {preferences.get('accommodation', 'mixed')}
@@ -527,10 +531,11 @@ USER PREFERENCES:
 TASK: Plan a {nights + 1}-day itinerary with specific waypoints and overnight locations.
 
 SEARCH REQUIREMENTS:
-- Search for current weather forecasts for all planned locations and travel dates
+- Search for current weather forecasts for all planned locations and travel dates{f" (starting {departure_date})" if departure_date else ""}
 - Find specific, bookable accommodations with current availability and pricing
 - Verify trail conditions and any seasonal closures or restrictions
 - Look up local services and attractions with current operating information
+- Check for seasonal events, festivals, or special conditions during the planned travel period
 
 PLANNING REQUIREMENTS:
 1. Identify the best intermediate destinations that make sense for a bikepacking tour
@@ -673,7 +678,7 @@ def get_multi_waypoint_directions(itinerary: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def generate_trip_plan(start: str, end: str, nights: int, preferences: Dict[str, str],
-                       itinerary: Dict[str, Any], directions: Dict[str, Any]) -> str:
+                       itinerary: Dict[str, Any], directions: Dict[str, Any], departure_date: Optional[str] = None) -> str:
     """
     Generate a detailed trip plan using the planned itinerary and route data.
 
@@ -684,6 +689,7 @@ def generate_trip_plan(start: str, end: str, nights: int, preferences: Dict[str,
         preferences: User preferences from follow-up questions
         itinerary: Planned itinerary with waypoints
         directions: Google Maps directions data for the planned route
+        departure_date: Optional departure date (format: YYYY-MM-DD)
 
     Returns:
         Detailed trip plan as markdown string
@@ -697,11 +703,13 @@ def generate_trip_plan(start: str, end: str, nights: int, preferences: Dict[str,
     total_duration = sum(leg['duration']['value'] for leg in directions['legs']) / 3600  # Convert to hours
 
     # Create detailed prompt for OpenAI
+    departure_info = f"\n- Departure date: {departure_date}" if departure_date else ""
+    
     prompt = f"""
 You are an expert bikepacking trip planner with access to current web information. Create a detailed {nights}-night bikepacking itinerary based on the planned route.
 
 SEARCH FOR CURRENT INFORMATION ABOUT:
-- WEATHER: Search for detailed weather forecasts for each planned location and travel dates
+- WEATHER: Search for detailed weather forecasts for each planned location and travel dates{f" (starting {departure_date})" if departure_date else ""}
 - ACCOMMODATIONS: Find specific campgrounds, hotels, B&Bs, hostels with current availability, exact pricing, booking requirements, and contact information
 - Trail conditions, road closures, construction, or detours along the route
 - Local bike shops for repairs, rentals, and supplies with current hours and services
@@ -717,7 +725,7 @@ PLANNED ITINERARY:
 ACTUAL ROUTE INFORMATION:
 - Total distance: {total_distance:.1f} km
 - Estimated cycling time: {total_duration:.1f} hours
-- Route segments: {len(directions['legs'])} legs
+- Route segments: {len(directions['legs'])} legs{departure_info}
 
 USER PREFERENCES:
 - Accommodation: {preferences.get('accommodation', 'mixed')}
@@ -770,11 +778,11 @@ Make this a comprehensive, actionable plan that follows the planned itinerary an
         return response.choices[0].message.content or "Error: Empty response from OpenAI"
     except Exception as e:
         print(f"Error generating trip plan: {e}")
-        return generate_trip_plan_fallback(start, end, nights, preferences, itinerary, directions)
+        return generate_trip_plan_fallback(start, end, nights, preferences, itinerary, directions, departure_date)
 
 
 def generate_trip_plan_fallback(start: str, end: str, nights: int, preferences: Dict[str, str],
-                                itinerary: Dict[str, Any], directions: Dict[str, Any]) -> str:
+                                itinerary: Dict[str, Any], directions: Dict[str, Any], departure_date: Optional[str] = None) -> str:
     """
     Fallback trip plan generation without function calling.
     """
@@ -787,13 +795,14 @@ def generate_trip_plan_fallback(start: str, end: str, nights: int, preferences: 
 
     # Create a simple trip plan based on the itinerary
     daily_plans = itinerary.get('itinerary', {})
+    departure_info = f"\n- **Departure Date**: {departure_date}" if departure_date else ""
 
     trip_plan = f"""# DirtGenie Trip: {start} to {end}
 
 ## Trip Overview
 - **Duration**: {nights} nights ({nights + 1} days)
 - **Total Distance**: {total_distance:.1f} km
-- **Estimated Cycling Time**: {total_duration:.1f} hours
+- **Estimated Cycling Time**: {total_duration:.1f} hours{departure_info}
 - **Accommodation Style**: {preferences.get('accommodation', 'mixed')}
 - **Fitness Level**: {preferences.get('fitness_level', 'intermediate')}
 
@@ -1190,7 +1199,7 @@ def openai_function_get_bicycle_route(start: str, end: str, waypoints: Optional[
 
 def revise_trip_plan_with_feedback(original_plan: str, feedback: str, start: str, end: str,
                                    nights: int, preferences: Dict[str, str],
-                                   itinerary: Dict[str, Any], directions: Dict[str, Any]) -> str:
+                                   itinerary: Dict[str, Any], directions: Dict[str, Any], departure_date: Optional[str] = None) -> str:
     """
     Revise a trip plan based on user feedback.
 
@@ -1203,6 +1212,7 @@ def revise_trip_plan_with_feedback(original_plan: str, feedback: str, start: str
         preferences: User preferences
         itinerary: Planned itinerary with waypoints
         directions: Google Maps directions data
+        departure_date: Optional departure date (format: YYYY-MM-DD)
 
     Returns:
         Revised trip plan as markdown string
@@ -1229,6 +1239,7 @@ ROUTE INFORMATION:
 - Duration: {nights} nights
 - Total distance: {total_distance:.1f} km
 - Estimated cycling time: {total_duration:.1f} hours
+- Departure date: {departure_date if departure_date else "Not specified"}
 
 PLANNED ITINERARY:
 {json.dumps(itinerary, indent=2)}
@@ -1289,6 +1300,7 @@ def main():
     parser.add_argument("--start", required=True, help="Starting location")
     parser.add_argument("--end", required=True, help="Ending location")
     parser.add_argument("--nights", type=int, required=True, help="Number of nights for the trip")
+    parser.add_argument("--departure-date", help="Departure date (YYYY-MM-DD format) for weather and seasonal planning")
     parser.add_argument("-i", "--interactive", action="store_true",
                         help="Enable interactive mode to ask preference questions")
     parser.add_argument("-p", "--profile", default="profile.yml",
@@ -1306,7 +1318,7 @@ def main():
     print(f"\n🧠 Planning your tour itinerary (determining waypoints and overnight stops)...")
 
     # Step 1: Plan the tour itinerary first
-    itinerary = plan_tour_itinerary(args.start, args.end, args.nights, preferences)
+    itinerary = plan_tour_itinerary(args.start, args.end, args.nights, preferences, args.departure_date)
 
     print(f"✅ Itinerary planned with {len(itinerary.get('itinerary', {}))} days")
 
@@ -1324,7 +1336,7 @@ def main():
     print(f"\n🤖 Generating your detailed trip plan with OpenAI...")
 
     # Step 3: Generate detailed trip plan based on the itinerary and route
-    trip_plan = generate_trip_plan(args.start, args.end, args.nights, preferences, itinerary, directions)
+    trip_plan = generate_trip_plan(args.start, args.end, args.nights, preferences, itinerary, directions, args.departure_date)
 
     print(f"\n📍 Creating detailed route GeoJSON...")
 

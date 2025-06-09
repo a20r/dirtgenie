@@ -181,7 +181,7 @@ def main():
     # Main form
     st.header("📍 Trip Details")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         start_location = st.text_input(
@@ -205,6 +205,16 @@ def main():
             value=3,
             help="How many nights you want to spend on the trip"
         )
+
+    with col4:
+        departure_date = st.date_input(
+            "Departure Date",
+            help="Optional: When you plan to start your trip (for weather and seasonal planning)"
+        )
+
+    # Add helpful note about departure date
+    if departure_date:
+        st.info(f"🌤️ **Departure date set to {departure_date.strftime('%B %d, %Y')}** - The AI will search for weather forecasts, seasonal information, and current events for your travel dates.")
 
     # Profile preferences
     st.header("🏕️ Trip Preferences")
@@ -279,6 +289,8 @@ def main():
             return
 
         # Create preferences dictionary
+        departure_date_str = departure_date.strftime("%Y-%m-%d") if departure_date else None
+        
         preferences = {
             "accommodation": accommodation,
             "stealth_camping": stealth_camping,
@@ -302,7 +314,7 @@ def main():
             # Step 1: Plan the itinerary
             status_text.text("🧠 Planning your tour itinerary...")
             progress_bar.progress(30)
-            itinerary = plan_tour_itinerary(start_location, end_location, nights, preferences)
+            itinerary = plan_tour_itinerary(start_location, end_location, nights, preferences, departure_date_str)
 
             # Step 2: Get route directions
             status_text.text("🗺️ Getting bicycle route information...")
@@ -316,7 +328,7 @@ def main():
             # Step 3: Generate detailed trip plan
             status_text.text("📝 Generating detailed trip plan...")
             progress_bar.progress(70)
-            trip_plan = generate_trip_plan(start_location, end_location, nights, preferences, itinerary, directions)
+            trip_plan = generate_trip_plan(start_location, end_location, nights, preferences, itinerary, directions, departure_date_str)
 
             # Step 4: Create GeoJSON
             status_text.text("📍 Creating route visualization...")
@@ -331,7 +343,16 @@ def main():
 
             # Calculate total distance
             total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000
-            st.metric("Total Distance", f"{total_distance:.1f} km")
+            
+            # Display trip metrics
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Total Distance", f"{total_distance:.1f} km")
+            with col2:
+                if departure_date_str:
+                    st.metric("Departure Date", departure_date_str)
+                else:
+                    st.metric("Departure Date", "Not specified")
 
             # Store data in session state for feedback functionality
             if 'trip_data' not in st.session_state:
@@ -341,6 +362,7 @@ def main():
                 'start_location': start_location,
                 'end_location': end_location,
                 'nights': nights,
+                'departure_date': departure_date_str,
                 'preferences': preferences,
                 'itinerary': itinerary,
                 'directions': directions,
@@ -375,7 +397,7 @@ def main():
                         try:
                             revised_plan = revise_trip_plan_with_feedback(
                                 trip_plan, feedback, start_location, end_location,
-                                nights, preferences, itinerary, directions
+                                nights, preferences, itinerary, directions, departure_date_str
                             )
                             st.session_state.trip_data['trip_plan'] = revised_plan
                             st.success("✅ Plan revised! Check the updated trip plan above.")
@@ -442,7 +464,16 @@ def main():
 
         # Display current trip metrics
         total_distance = sum(leg['distance']['value'] for leg in trip_data['directions']['legs']) / 1000
-        st.metric("Total Distance", f"{total_distance:.1f} km")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Total Distance", f"{total_distance:.1f} km")
+        with col2:
+            departure_date = trip_data.get('departure_date')
+            if departure_date:
+                st.metric("Departure Date", departure_date)
+            else:
+                st.metric("Departure Date", "Not specified")
 
         # Create tabs for better layout
         tab1, tab2 = st.tabs(["📄 Trip Plan", "🗺️ Route Map"])
@@ -472,7 +503,7 @@ def main():
                         revised_plan = revise_trip_plan_with_feedback(
                             trip_data['trip_plan'], feedback, trip_data['start_location'],
                             trip_data['end_location'], trip_data['nights'], trip_data['preferences'],
-                            trip_data['itinerary'], trip_data['directions']
+                            trip_data['itinerary'], trip_data['directions'], trip_data.get('departure_date')
                         )
                         st.session_state.trip_data['trip_plan'] = revised_plan
                         st.success("✅ Plan revised! The updated trip plan is shown above.")
