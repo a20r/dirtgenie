@@ -26,7 +26,11 @@ coverage.xml
 .pytest_cache
 .hypothesis
 
+# Env vars
+.env
+
 # Virtual environments
+.venv/
 venv/
 env/
 ENV/
@@ -54,9 +58,12 @@ dist/
 
 # Trip data (user-generated content)
 trips/
+dirtgenie_*.md
+dirtgenie_*.geojson
 
 # Documentation build
 docs/_build/
+docs/
 
 # Test outputs
 .pytest_cache/
