@@ -276,6 +276,57 @@ def main():
         help="Select your interests to customize recommendations"
     )
 
+    # Bike Setup Section
+    st.header("🚴 Bike Setup")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        tire_size = st.selectbox(
+            "Tire Size",
+            options=[
+                "700x23c (Road - Narrow)",
+                "700x25c (Road - Standard)", 
+                "700x28c (Road - Wide)",
+                "700x32c (Gravel - Narrow)",
+                "700x35c (Gravel - Standard)",
+                "700x40c (Gravel - Wide)",
+                "650b x 47mm (Gravel+)",
+                "650b x 2.1in (Mountain - XC)",
+                "650b x 2.25in (Mountain - Trail)",
+                "650b x 2.35in (Mountain - All Mountain)",
+                "26\" x 2.1in (Mountain - XC)",
+                "26\" x 2.25in (Mountain - Trail)",
+                "29\" x 2.1in (Mountain - XC)",
+                "29\" x 2.25in (Mountain - Trail)",
+                "29\" x 2.35in (Mountain - All Mountain)",
+                "Other/Custom"
+            ],
+            index=4,  # Default to 700x35c
+            help="Your bike's tire size - helps determine suitable terrain and routes"
+        )
+    
+    with col2:
+        if tire_size == "Other/Custom":
+            custom_tire_size = st.text_input(
+                "Custom Tire Size",
+                placeholder="e.g., 650b x 2.8in",
+                help="Enter your custom tire size"
+            )
+            display_tire_size = custom_tire_size if custom_tire_size else "700x35c"
+        else:
+            display_tire_size = tire_size
+            
+        # Show tire capability info
+        if "700x" in display_tire_size and any(x in display_tire_size.lower() for x in ["23", "25", "28"]):
+            st.info("🏁 **Road bike setup** - Best for paved roads and smooth surfaces")
+        elif "700x" in display_tire_size or "650b x 47" in display_tire_size or any(x in display_tire_size for x in ["32", "35", "40"]):
+            st.info("🛤️ **Gravel bike setup** - Great for mixed terrain, gravel roads, and light trails")
+        elif any(x in display_tire_size for x in ["2.1", "2.25", "2.35", "2.8"]):
+            st.info("🏔️ **Mountain bike setup** - Perfect for trails, singletrack, and challenging terrain")
+        else:
+            st.info("🚴 **Custom setup** - Route recommendations will be customized to your tire size")
+
     # Plan Trip button
     st.header("🚀 Generate Your Trip")
 
@@ -297,6 +348,7 @@ def main():
             "fitness_level": fitness_level,
             "daily_distance": f"{daily_distance[0]}-{daily_distance[1]}",  # Convert slider to string format
             "terrain": terrain,
+            "tire_size": display_tire_size,
             "budget": budget,
             "interests": interests
         }

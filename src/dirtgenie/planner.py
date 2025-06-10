@@ -150,6 +150,7 @@ def create_default_profile() -> Dict[str, Any]:
         'fitness_level': 'intermediate',
         'daily_distance': '50-80',
         'terrain': 'mixed',
+        'tire_size': '700x35c (Gravel - Standard)',
         'budget': 'moderate',
         'interests': ['nature', 'adventure']
     }
@@ -242,6 +243,9 @@ daily_distance: {profile_data['daily_distance']}
 # Terrain preference: paved, gravel, mixed, or challenging
 terrain: {profile_data['terrain']}
 
+# Tire size (e.g., "700x35c", "650b x 2.25in", "29\" x 2.1in")
+tire_size: {profile_data.get('tire_size', '700x35c (Gravel - Standard)')}
+
 # Budget range: budget, moderate, or luxury
 budget: {profile_data['budget']}
 
@@ -326,6 +330,29 @@ def ask_follow_up_questions() -> Dict[str, str]:
             preferences['terrain'] = terrain
             break
         print("Please choose: paved, gravel, mixed, or challenging")
+
+    # Tire size
+    print("\n🚴 What tire size are you riding?")
+    print("1. Road bike (700x23-28c)")
+    print("2. Gravel bike (700x32-40c)")
+    print("3. Mountain bike (26\", 27.5\", or 29\")")
+    print("4. Other/Custom")
+    
+    while True:
+        tire_choice = input("Choose option (1-4): ").strip()
+        if tire_choice == '1':
+            preferences['tire_size'] = input("Specific size (e.g., 700x25c) or press Enter for 700x25c: ").strip() or "700x25c"
+            break
+        elif tire_choice == '2':
+            preferences['tire_size'] = input("Specific size (e.g., 700x35c) or press Enter for 700x35c: ").strip() or "700x35c"
+            break
+        elif tire_choice == '3':
+            preferences['tire_size'] = input("Specific size (e.g., 29\" x 2.25in) or press Enter for 29\" x 2.1in: ").strip() or "29\" x 2.1in"
+            break
+        elif tire_choice == '4':
+            preferences['tire_size'] = input("Enter your tire size (e.g., 650b x 47mm): ").strip() or "700x35c"
+            break
+        print("Please choose 1, 2, 3, or 4")
 
     # Budget
     while True:
@@ -428,6 +455,7 @@ USER PREFERENCES:
 - Stealth camping allowed: {preferences.get('stealth_camping', False)}
 - Fitness level: {preferences.get('fitness_level', 'intermediate')}
 - Terrain preference: {preferences.get('terrain', 'mixed')}
+- Tire size: {preferences.get('tire_size', '700x35c (Gravel - Standard)')}
 - Budget: {preferences.get('budget', 'moderate')}
 - Interests: {', '.join(preferences.get('interests', []))}
 
@@ -439,6 +467,13 @@ CRITICAL REQUIREMENTS FOR CLOSED-LOOP TOURS:
 3. **Maximum radius calculation** - with {nights + 1} days and {daily_distance} km/day, you can only go about {max_radius_km}km from start as the crow flies
 4. **Think circular/polygonal** - plan destinations that form a roughly circular or polygonal pattern around the start point
 5. **Balance the loop** - ensure you're never more than {max_radius_km}km from home at any point
+
+ROUTE SURFACE AND TIRE COMPATIBILITY:
+Based on tire size "{preferences.get('tire_size', '700x35c (Gravel - Standard)')}" and terrain preference "{preferences.get('terrain', 'mixed')}":
+- If tire size contains "23", "25", or "28mm": Prioritize paved roads, light gravel paths, and well-maintained bike paths
+- If tire size contains "32", "35", "40mm" or "650b": Good for mixed terrain - paved roads, gravel paths, and light trails
+- If tire size contains "2.1", "2.25", "2.35", or "2.8": Can handle mountain bike trails, singletrack, and rougher terrain
+- Always match route surface recommendations to tire capabilities for safety and comfort
 
 LOOP PLANNING STRATEGY:
 For a {nights + 1}-day loop with {daily_distance} km daily distance:
@@ -525,6 +560,7 @@ USER PREFERENCES:
 - Stealth camping allowed: {preferences.get('stealth_camping', False)}
 - Fitness level: {preferences.get('fitness_level', 'intermediate')}
 - Terrain preference: {preferences.get('terrain', 'mixed')}
+- Tire size: {preferences.get('tire_size', '700x35c (Gravel - Standard)')}
 - Budget: {preferences.get('budget', 'moderate')}
 - Interests: {', '.join(preferences.get('interests', []))}
 
@@ -543,6 +579,13 @@ PLANNING REQUIREMENTS:
 3. Plan realistic daily segments based on terrain and fitness level - stay within {daily_distance} km per day
 4. Choose specific towns/cities/landmarks as overnight stops
 5. Ensure progression toward the final destination
+
+ROUTE SURFACE AND TIRE COMPATIBILITY:
+Based on tire size "{preferences.get('tire_size', '700x35c (Gravel - Standard)')}" and terrain preference "{preferences.get('terrain', 'mixed')}":
+- If tire size contains "23", "25", or "28mm": Prioritize paved roads, light gravel paths, and well-maintained bike paths
+- If tire size contains "32", "35", "40mm" or "650b": Good for mixed terrain - paved roads, gravel paths, and light trails  
+- If tire size contains "2.1", "2.25", "2.35", or "2.8": Can handle mountain bike trails, singletrack, and rougher terrain
+- Always match route surface recommendations to tire capabilities for safety and comfort
 
 Return the plan in this exact JSON format:
 
@@ -733,6 +776,7 @@ USER PREFERENCES:
 - Fitness level: {preferences.get('fitness_level', 'intermediate')}
 - Daily distance preference: {preferences.get('daily_distance', '50-80')} km
 - Terrain preference: {preferences.get('terrain', 'mixed')}
+- Tire size: {preferences.get('tire_size', '700x35c (Gravel - Standard)')}
 - Budget: {preferences.get('budget', 'moderate')}
 - Interests: {', '.join(preferences.get('interests', []))}
 
@@ -747,6 +791,13 @@ REQUIREMENTS:
 8. Provide detailed weather information: temperatures, precipitation, wind, and seasonal considerations
 9. Include emergency contacts and backup plans with up-to-date contact information
 10. Search for any current events, construction, or alerts that might affect the planned route
+
+ROUTE SURFACE RECOMMENDATIONS:
+Based on tire size "{preferences.get('tire_size', '700x35c (Gravel - Standard)')}" and terrain preference "{preferences.get('terrain', 'mixed')}":
+- If tire size contains "23", "25", or "28mm": Recommend paved roads, smooth bike paths, and well-maintained gravel paths only
+- If tire size contains "32", "35", "40mm" or "650b": Can handle mixed surfaces - include paved roads, gravel paths, and light trails
+- If tire size contains "2.1", "2.25", "2.35", or "2.8": Suitable for mountain bike trails, singletrack, and rougher terrain
+- Include specific surface type warnings and recommendations for each route segment based on tire capabilities
 
 FORMAT as detailed markdown with:
 - **WEATHER SECTION**: Detailed current forecasts for each location and travel day
@@ -1250,6 +1301,7 @@ USER PREFERENCES:
 - Fitness level: {preferences.get('fitness_level', 'intermediate')}
 - Daily distance preference: {preferences.get('daily_distance', '50-80')} km
 - Terrain preference: {preferences.get('terrain', 'mixed')}
+- Tire size: {preferences.get('tire_size', '700x35c (Gravel - Standard)')}
 - Budget: {preferences.get('budget', 'moderate')}
 - Interests: {', '.join(preferences.get('interests', []))}
 
@@ -1263,6 +1315,13 @@ INSTRUCTIONS:
 7. Use web search to find current, up-to-date information for any new recommendations
 8. Keep the same markdown format and level of detail
 9. Clearly indicate what changes were made in response to their feedback
+
+ROUTE SURFACE CONSIDERATIONS:
+When making route revisions, consider tire size "{preferences.get('tire_size', '700x35c (Gravel - Standard)')}" and terrain preference "{preferences.get('terrain', 'mixed')}":
+- If tire size contains "23", "25", or "28mm": Prioritize paved roads and smooth surfaces
+- If tire size contains "32", "35", "40mm" or "650b": Can handle mixed terrain including gravel paths
+- If tire size contains "2.1", "2.25", "2.35", or "2.8": Suitable for mountain bike trails and rough terrain
+- Ensure any route modifications match the user's tire capabilities for safety and comfort
 
 Make the revisions thoughtfully and provide a comprehensive updated plan that addresses their feedback while maintaining trip quality and feasibility.
 """
