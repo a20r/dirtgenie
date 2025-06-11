@@ -1,0 +1,289 @@
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+import uvicorn
+
+# Add the parent directory to Python path to import dirtgenie modules
+sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
+
+from dirtgenie.planner import (
+    create_default_profile,
+    get_bicycle_directions,
+    get_multi_waypoint_directions,
+    initialize_clients,
+    plan_tour_itinerary,
+    generate_trip_plan,
+    revise_trip_plan_with_feedback,
+    create_geojson,
+    save_profile,
+    load_profile
+)
+
+app = FastAPI(
+    title="DirtGenie API",
+    description="AI-Powered Bikepacking Trip Planner API",
+    version="1.0.0"
+)
+
+# Enable CORS for frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # React dev server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Pydantic models for request/response
+class TripPreferences(BaseModel):
+    accommodation: str = Field(default="mixed", description="Accommodation preference")
+    stealth_camping: bool = Field(default=False, description="Allow stealth camping")
+    fitness_level: str = Field(default="intermediate", description="Fitness level")
+    daily_distance: str = Field(default="50-80", description="Daily distance range in km")
+    terrain: str = Field(default="mixed", description="Terrain preference")
+    tire_size: str = Field(default="700x35c (Gravel - Standard)", description="Bike tire size")
+    budget: str = Field(default="moderate", description="Budget preference")
+    interests: List[str] = Field(default=[], description="Interests and activities")
+
+class TripPlanRequest(BaseModel):
+    start_location: str = Field(..., description="Starting location")
+    end_location: str = Field(..., description="Ending location")
+    nights: int = Field(..., ge=1, le=30, description="Number of nights (1-30)")
+    departure_date: Optional[str] = Field(None, description="Departure date (YYYY-MM-DD)")
+    preferences: TripPreferences
+
+class TripRevisionRequest(BaseModel):
+    original_plan: str = Field(..., description="Original trip plan markdown")
+    feedback: str = Field(..., description="User feedback for revision")
+    trip_request: TripPlanRequest
+
+class TripPlanResponse(BaseModel):
+    success: bool
+    trip_plan: Optional[str] = None
+    itinerary: Optional[Dict[str, Any]] = None
+    geojson: Optional[Dict[str, Any]] = None
+    total_distance: Optional[float] = None
+    error: Optional[str] = None
+
+class ProfileRequest(BaseModel):
+    profile_name: str = Field(..., description="Profile name")
+    preferences: TripPreferences
+
+# Global variables for storing trip data (in production, use a proper database)
+trip_cache = {}
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize API clients on startup"""
+    try:
+        initialize_clients()
+    except Exception as e:
+        print(f"Warning: Could not initialize API clients: {e}")
+
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {"message": "DirtGenie API is running", "version": "1.0.0"}
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+
+@app.get("/api/default-profile")
+async def get_default_profile():
+    """Get default user profile"""
+    try:
+        profile = create_default_profile()
+        return {"success": True, "profile": profile}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/save-profile")
+async def save_user_profile(request: ProfileRequest):
+    """Save user profile"""
+    try:
+        # Convert preferences to dict
+        preferences_dict = request.preferences.dict()
+        
+        # Save profile (this would typically go to a database)
+        profile_data = {
+            "name": request.profile_name,
+            **preferences_dict
+        }
+        
+        # For demo purposes, just return success
+        # In production, save to database or file system
+        return {"success": True, "message": f"Profile '{request.profile_name}' saved successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/plan-trip", response_model=TripPlanResponse)
+async def plan_trip(request: TripPlanRequest, background_tasks: BackgroundTasks):
+    """Plan a bikepacking trip"""
+    try:
+        # Convert preferences to dict format expected by planner
+        preferences = request.preferences.dict()
+        
+        # Step 1: Plan the itinerary
+        itinerary = plan_tour_itinerary(
+            start=request.start_location,
+            end=request.end_location,
+            nights=request.nights,
+            preferences=preferences,
+            departure_date=request.departure_date
+        )
+        
+        # Step 2: Get route directions
+        directions = get_multi_waypoint_directions(itinerary)
+        
+        if not directions or 'legs' not in directions:
+            raise HTTPException(status_code=400, detail="Could not find a bicycle route between the specified locations")
+        
+        # Step 3: Generate detailed trip plan
+        trip_plan = generate_trip_plan(
+            start=request.start_location,
+            end=request.end_location,
+            nights=request.nights,
+            preferences=preferences,
+            itinerary=itinerary,
+            directions=directions,
+            departure_date=request.departure_date
+        )
+        
+        # Step 4: Create GeoJSON
+        geojson_data = create_geojson(
+            start=request.start_location,
+            end=request.end_location,
+            directions=directions,
+            preferences=preferences,
+            trip_plan=trip_plan,
+            itinerary=itinerary
+        )
+        
+        # Calculate total distance
+        total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000
+        
+        # Store in cache for potential revisions
+        trip_id = f"{request.start_location}_{request.end_location}_{request.nights}_{datetime.now().timestamp()}"
+        trip_cache[trip_id] = {
+            "request": request,
+            "itinerary": itinerary,
+            "directions": directions,
+            "trip_plan": trip_plan
+        }
+        
+        return TripPlanResponse(
+            success=True,
+            trip_plan=trip_plan,
+            itinerary=itinerary,
+            geojson=geojson_data,
+            total_distance=total_distance
+        )
+        
+    except Exception as e:
+        return TripPlanResponse(
+            success=False,
+            error=str(e)
+        )
+
+@app.post("/api/revise-trip", response_model=TripPlanResponse)
+async def revise_trip(request: TripRevisionRequest):
+    """Revise a trip plan based on user feedback"""
+    try:
+        # Convert preferences to dict format
+        preferences = request.trip_request.preferences.dict()
+        
+        # For this demo, we'll need to re-plan since we don't have the original data
+        # In production, you'd store and retrieve the original itinerary and directions
+        
+        # Re-plan the itinerary first
+        itinerary = plan_tour_itinerary(
+            start=request.trip_request.start_location,
+            end=request.trip_request.end_location,
+            nights=request.trip_request.nights,
+            preferences=preferences,
+            departure_date=request.trip_request.departure_date
+        )
+        
+        # Get route directions
+        directions = get_multi_waypoint_directions(itinerary)
+        
+        # Generate revised trip plan
+        revised_plan = revise_trip_plan_with_feedback(
+            original_plan=request.original_plan,
+            feedback=request.feedback,
+            start=request.trip_request.start_location,
+            end=request.trip_request.end_location,
+            nights=request.trip_request.nights,
+            preferences=preferences,
+            itinerary=itinerary,
+            directions=directions,
+            departure_date=request.trip_request.departure_date
+        )
+        
+        # Create updated GeoJSON
+        geojson_data = create_geojson(
+            start=request.trip_request.start_location,
+            end=request.trip_request.end_location,
+            directions=directions,
+            preferences=preferences,
+            trip_plan=revised_plan,
+            itinerary=itinerary
+        )
+        
+        # Calculate total distance
+        total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000
+        
+        return TripPlanResponse(
+            success=True,
+            trip_plan=revised_plan,
+            itinerary=itinerary,
+            geojson=geojson_data,
+            total_distance=total_distance
+        )
+        
+    except Exception as e:
+        return TripPlanResponse(
+            success=False,
+            error=str(e)
+        )
+
+@app.get("/api/tire-options")
+async def get_tire_options():
+    """Get available tire size options"""
+    return {
+        "tire_options": [
+            "700x23c (Road - Narrow)",
+            "700x25c (Road - Standard)", 
+            "700x28c (Road - Wide)",
+            "700x32c (Gravel - Narrow)",
+            "700x35c (Gravel - Standard)",
+            "700x40c (Gravel - Wide)",
+            "650b x 47mm (Gravel+)",
+            "650b x 2.1in (Mountain - XC)",
+            "650b x 2.25in (Mountain - Trail)",
+            "650b x 2.35in (Mountain - All Mountain)",
+            "26\" x 2.1in (Mountain - XC)",
+            "26\" x 2.25in (Mountain - Trail)",
+            "29\" x 2.1in (Mountain - XC)",
+            "29\" x 2.25in (Mountain - Trail)",
+            "29\" x 2.35in (Mountain - All Mountain)"
+        ]
+    }
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info"
+    )

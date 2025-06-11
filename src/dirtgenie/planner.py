@@ -628,7 +628,7 @@ IMPORTANT: Use web search to find:
 
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4.1",
+            model="gpt-4o",
             messages=[
                 {"role": "system",
                     "content": "You are an expert bikepacking tour planner with access to current web information. Always respond with valid JSON exactly as requested. IMPORTANT: Use your web search capabilities to find current information about: 1) Specific accommodations (campgrounds, hotels, hostels) with availability, pricing, and booking details, 2) Current weather forecasts for the planned travel dates and locations, 3) Trail conditions and any closures, 4) Local attractions and their current operating status. Search for real, specific places and current information."},
@@ -816,7 +816,7 @@ Make this a comprehensive, actionable plan that follows the planned itinerary an
 
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4.1",
+            model="gpt-4o",
             messages=[
                 {"role": "system",
                     "content": "You are an expert bikepacking guide with extensive knowledge of routes, gear, safety, and local attractions worldwide. You have access to current web information and should search for up-to-date details about: 1) WEATHER - Get detailed forecasts for all locations and travel dates, 2) ACCOMMODATIONS - Find specific places to stay with current availability, pricing, and booking information, 3) Trail conditions, closures, and safety alerts, 4) Local services (bike shops, restaurants, stores) with current hours and status. Always provide current, accurate, searchable information in your recommendations."},

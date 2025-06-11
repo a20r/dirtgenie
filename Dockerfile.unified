@@ -1,0 +1,68 @@
+# Multi-stage build for DirtGenie Web App (Frontend + Backend)
+# This container runs both the React frontend and FastAPI backend
+
+# Stage 1: Build the React frontend
+FROM node:18-alpine AS frontend-builder
+WORKDIR /app/frontend
+
+# Copy frontend package files
+COPY web/frontend/package*.json ./
+RUN npm ci
+
+# Copy frontend source and build
+COPY web/frontend/ ./
+RUN npm run build
+
+# Stage 2: Setup Python backend and serve everything
+FROM python:3.11-slim AS production
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    nginx \
+    supervisor \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create application directory
+WORKDIR /app
+
+# Copy backend requirements and install Python dependencies
+COPY web/backend/requirements.txt ./backend/
+RUN pip install --no-cache-dir -r backend/requirements.txt
+
+# Copy backend source
+COPY web/backend/ ./backend/
+
+# Copy source from parent directory (now current directory)
+COPY src ./src
+
+# Copy built frontend from previous stage
+COPY --from=frontend-builder /app/frontend/build ./frontend/build
+
+# Configure nginx to serve frontend and proxy API calls
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Create supervisor configuration
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Create startup script
+COPY start-unified.sh /app/start-unified.sh
+RUN chmod +x /app/start-unified.sh
+
+# Create non-root user and set permissions
+RUN useradd --create-home --shell /bin/bash dirtgenie \
+    && chown -R dirtgenie:dirtgenie /app \
+    && mkdir -p /var/log/nginx /var/lib/nginx \
+    && chown -R dirtgenie:dirtgenie /var/log/nginx \
+    && chown -R dirtgenie:dirtgenie /var/lib/nginx
+
+# Expose port 80 for the unified app
+EXPOSE 80
+
+# Set environment variables
+ENV PYTHONPATH=/app/src
+ENV REACT_APP_API_URL=http://localhost:80/api
+
+# Use supervisor to run both services
+CMD ["/app/start-unified.sh"]
