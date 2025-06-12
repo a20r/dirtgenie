@@ -372,7 +372,7 @@ def ask_follow_up_questions() -> Dict[str, str]:
     return preferences
 
 
-def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str, str], departure_date: Optional[str] = None) -> Dict[str, Any]:
+def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str, str], desires: List[str], departure_date: Optional[str] = None) -> Dict[str, Any]:
     """
     First step: Plan the tour itinerary with specific waypoints and overnight stops.
     This determines WHERE to go before figuring out HOW to get there.
@@ -421,6 +421,9 @@ def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str
         # Fallback if route query fails
         total_distance = 100  # Default assumption
 
+    # Incorporate desires into the planning process
+    if desires:
+        print(f"User desires: {', '.join(desires)}")
     # Create different prompts for closed-loop vs point-to-point tours
     if is_closed_loop:
         # Calculate maximum practical radius for closed-loop planning
@@ -598,75 +601,32 @@ Return the plan in this exact JSON format with EXTENSIVE DETAIL:
             "start_location": "{start}",
             "end_location": "Specific Town/City Name",
             "waypoints": [
-                {{
-                    "name": "Specific landmark, town, or point of interest",
-                    "distance_from_start_km": 15,
-                    "description": "Detailed description of this waypoint, why it's notable, services available",
-                    "services": ["food", "water", "restrooms", "bike shop", "accommodation"]
-                }},
-                {{
-                    "name": "Another specific waypoint",
-                    "distance_from_start_km": 35,
-                    "description": "Another detailed description with specific attractions or services",
-                    "services": ["grocery store", "restaurant", "scenic viewpoint"]
-                }},
-                {{
-                    "name": "Third waypoint or town",
-                    "distance_from_start_km": 55,
-                    "description": "More detailed descriptions of what makes this stop worthwhile",
-                    "services": ["accommodation", "food", "historic site"]
-                }}
+                "Waypoint 1 name (15km) - Description and services",
+                "Waypoint 2 name (35km) - Description and services", 
+                "Waypoint 3 name (55km) - Description and services"
             ],
-            "overnight_location": "Specific accommodation name or camping area (search for real, bookable options with current availability)",
-            "accommodation_details": {{
-                "name": "Specific accommodation name",
-                "type": "campground/hotel/hostel/B&B",
-                "address": "Full address",
-                "phone": "Contact number",
-                "pricing": "$XX per night",
-                "amenities": ["showers", "wifi", "restaurant", "bike storage"],
-                "booking_info": "How to book, website, or reservation requirements"
-            }},
+            "overnight_location": "Specific accommodation name with contact info",
             "highlights": ["attraction 1 with details", "attraction 2 with details", "attraction 3 with details"],
             "estimated_distance_km": 75,
             "elevation_gain_m": 850,
             "difficulty": "moderate",
-            "surface_types": ["paved road: 40km", "gravel path: 25km", "dirt trail: 10km"],
+            "surface_types": "40km paved road, 25km gravel path, 10km dirt trail",
             "food_stops": ["Restaurant Name at km 20", "Grocery Store at km 45"],
-            "water_sources": ["Public fountain at km 10", "Stream crossing at km 30", "Town well at km 60"]
+            "water_sources": ["Public fountain at km 10", "Stream at km 30", "Town well at km 60"]
         }},
         "day_2": {{
             "start_location": "Previous end location",
             "end_location": "Next Town/City Name",
             "waypoints": [
-                {{
-                    "name": "Specific waypoint for day 2",
-                    "distance_from_start_km": 20,
-                    "description": "Detailed description of this day 2 waypoint",
-                    "services": ["relevant services"]
-                }},
-                {{
-                    "name": "Another day 2 waypoint",
-                    "distance_from_start_km": 45,
-                    "description": "Another detailed waypoint description",
-                    "services": ["more services"]
-                }}
+                "Day 2 waypoint 1 (20km) - Description and services",
+                "Day 2 waypoint 2 (45km) - Description and services"
             ],
-            "overnight_location": "Specific accommodation name or camping area (search for real, bookable options with current availability)",
-            "accommodation_details": {{
-                "name": "Specific accommodation name for day 2",
-                "type": "campground/hotel/hostel/B&B",
-                "address": "Full address",
-                "phone": "Contact number",
-                "pricing": "$XX per night",
-                "amenities": ["relevant amenities"],
-                "booking_info": "Booking details"
-            }},
+            "overnight_location": "Specific accommodation name with contact info",
             "highlights": ["day 2 attraction 1 with details", "day 2 attraction 2 with details"],
             "estimated_distance_km": 80,
             "elevation_gain_m": 650,
             "difficulty": "easy",
-            "surface_types": ["surface breakdown for day 2"],
+            "surface_types": "50km paved road, 30km gravel path",
             "food_stops": ["Food options for day 2"],
             "water_sources": ["Water sources for day 2"]
         }},
@@ -674,20 +634,13 @@ Return the plan in this exact JSON format with EXTENSIVE DETAIL:
         "day_{nights + 1}": {{
             "start_location": "Previous end location",
             "end_location": "{end}",
-            "waypoints": [
-                {{
-                    "name": "Final day waypoint",
-                    "distance_from_start_km": 25,
-                    "description": "Final day waypoint details",
-                    "services": ["final services"]
-                }}
-            ],
+            "waypoints": ["Final day waypoints with descriptions"],
             "overnight_location": "Arrive at destination",
             "highlights": ["final day attractions with details"],
             "estimated_distance_km": 65,
             "elevation_gain_m": 400,
             "difficulty": "moderate",
-            "surface_types": ["final day surface types"],
+            "surface_types": "final day surface breakdown",
             "food_stops": ["final day food options"],
             "water_sources": ["final day water sources"]
         }}
@@ -699,8 +652,7 @@ Return the plan in this exact JSON format with EXTENSIVE DETAIL:
     "gear_recommendations": ["specific gear for this route"],
     "emergency_contacts": ["relevant emergency contacts for the route area"],
     "permits_required": ["any permits or fees needed"],
-    "difficulty_rating": "beginner/intermediate/advanced",
-    "estimated_total_time": "X days of cycling"
+    "difficulty_rating": "beginner/intermediate/advanced"
 }}
 
 Be specific with location names (include city, state/province). Choose real places that make sense for bikepacking.
@@ -716,7 +668,7 @@ IMPORTANT: Use web search to find:
             model="gpt-4o",
             messages=[
                 {"role": "system",
-                    "content": "You are an expert bikepacking tour planner with access to current web information. Always respond with valid JSON exactly as requested. CRITICAL: You must be extremely detailed and verbose in your response. IMPORTANT: Use your web search capabilities to find current information about: 1) Specific accommodations (campgrounds, hotels, hostels) with availability, pricing, and booking details, 2) Current weather forecasts for the planned travel dates and locations, 3) Trail conditions and any closures, 4) Local attractions and their current operating status. Search for real, specific places and current information. Include MANY waypoints and detailed descriptions for each day."},
+                    "content": "You are an expert bikepacking tour planner with access to current web information. CRITICAL: You must respond with ONLY valid JSON exactly as requested - no additional text, no markdown, no explanations outside the JSON. Be extremely detailed within the JSON structure. IMPORTANT: Use your web search capabilities to find current information about: 1) Specific accommodations (campgrounds, hotels, hostels) with availability, pricing, and booking details, 2) Current weather forecasts for the planned travel dates and locations, 3) Trail conditions and any closures, 4) Local attractions and their current operating status. Search for real, specific places and current information. Include MANY waypoints and detailed descriptions for each day."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
@@ -730,13 +682,37 @@ IMPORTANT: Use web search to find:
 
         itinerary_json = content.strip()
 
-        # Clean up the response to ensure it's valid JSON
+        # More robust JSON extraction
+        # Look for JSON content between markers or extract the first complete JSON object
         if itinerary_json.startswith('```json'):
             itinerary_json = itinerary_json[7:]
         if itinerary_json.endswith('```'):
             itinerary_json = itinerary_json[:-3]
+        
+        # Find the start and end of the JSON object
+        json_start = itinerary_json.find('{')
+        if json_start == -1:
+            raise ValueError("No JSON object found in response")
+        
+        # Find the matching closing brace by counting braces
+        brace_count = 0
+        json_end = -1
+        for i, char in enumerate(itinerary_json[json_start:], json_start):
+            if char == '{':
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+                if brace_count == 0:
+                    json_end = i + 1
+                    break
+        
+        if json_end == -1:
+            # Fallback: try to parse the whole cleaned content
+            json_content = itinerary_json.strip()
+        else:
+            json_content = itinerary_json[json_start:json_end]
 
-        itinerary = json.loads(itinerary_json)
+        itinerary = json.loads(json_content)
         return itinerary
 
     except Exception as e:
@@ -806,7 +782,8 @@ def get_multi_waypoint_directions(itinerary: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def generate_trip_plan(start: str, end: str, nights: int, preferences: Dict[str, str],
-                       itinerary: Dict[str, Any], directions: Dict[str, Any], departure_date: Optional[str] = None) -> str:
+                       itinerary: Dict[str, Any], directions: Dict[str, Any], departure_date: Optional[str] = None,
+                       desires: Optional[List[str]] = None) -> str:
     """
     Generate a detailed trip plan using the planned itinerary and route data.
 
@@ -833,8 +810,146 @@ def generate_trip_plan(start: str, end: str, nights: int, preferences: Dict[str,
     # Create detailed prompt for OpenAI
     departure_info = f"\n- Departure date: {departure_date}" if departure_date else ""
 
+    desires_text = ', '.join(desires) if desires else 'No specific desires provided.'
+
     prompt = f"""
+    USER DESIRES:
+    - {desires_text}
+
 You are an expert bikepacking trip planner with access to current web information. Create a detailed {nights}-night bikepacking itinerary based on the planned route.
+
+EXAMPLE OF EXCELLENT OUTPUT FORMAT:
+Here is an example of the exact format and level of detail you should provide:
+
+```
+# 🚴‍♂️ TRIP OVERVIEW & DAILY SUMMARY
+
+## 📊 Trip Summary Table
+
+| Day | Date | Start Location | End Location | Overnight | Daily Distance | Cumulative | Weather | Highlights |
+|-----|------|----------------|--------------|-----------|----------------|------------|---------|------------|
+| 1 | Dec 28, 2024 | Healdsburg, CA | Cloverdale, CA | River Rock Casino Hotel | 32km | 32km | ☀️ 15°C, Clear | Russian River Trail, Vineyard Views |
+| 2 | Dec 29, 2024 | Cloverdale, CA | Ukiah, CA | Hampton Inn & Suites Ukiah | 45km | 77km | ⛅ 12°C, Partly Cloudy | Hopland Pass, Redwood Valley |
+| 3 | Dec 30, 2024 | Ukiah, CA | Willits, CA | Baechtel Creek Inn | 48km | 125km | 🌧️ 10°C, Light Rain | Redwood Groves, Historic Depot |
+| 4 | Dec 31, 2024 | Willits, CA | Healdsburg, CA | Back home! | 52km | 177km | ☀️ 14°C, Sunny | New Year's Eve return, Celebration |
+
+## 🗺️ Detailed Waypoints & Segments
+
+### Day 1: Healdsburg → Cloverdale (32km)
+| Segment | From | To | Distance | Cumulative | Surface | Elevation | Services | Notes |
+|---------|------|----|---------:|----------:|---------|-----------|----------|-------|
+| 1 | Healdsburg Plaza | Geyserville | 12km | 12km | Paved road | +50m | Water, Food | Historic downtown, wine tasting |
+| 2 | Geyserville | Asti | 8km | 20km | Russian River Trail | +25m | None | Scenic riverside path |
+| 3 | Asti | Cloverdale | 12km | 32km | Mixed pavement | +75m | All services | Wine country finale |
+
+### Day 2: Cloverdale → Ukiah (45km)
+| Segment | From | To | Distance | Cumulative | Surface | Elevation | Services | Notes |
+|---------|------|----|---------:|----------:|---------|-----------|----------|-------|
+| 1 | Cloverdale Plaza | Hopland | 18km | 18km | Hwy 101 bike path | +150m | Water, Café | Hopland Brewery stop |
+| 2 | Hopland | Yorkville | 15km | 33km | Mountain road | +300m | Limited | Challenging climb |
+| 3 | Yorkville | Ukiah | 12km | 45km | Descending road | -200m | All services | Fast descent to city |
+
+### Day 3: Ukiah → Willits (48km)
+| Segment | From | To | Distance | Cumulative | Surface | Elevation | Services | Notes |
+|---------|------|----|---------:|----------:|---------|-----------|----------|-------|
+| 1 | Ukiah downtown | Potter Valley Rd | 15km | 15km | Paved road | +200m | Water, Store | Rural farmland |
+| 2 | Potter Valley Rd | Calpella | 12km | 27km | Country roads | +100m | Limited | Quiet backroads |
+| 3 | Calpella | Willits | 21km | 48km | Forest road | +250m | All services | Redwood country |
+
+### Day 4: Willits → Healdsburg (52km) 
+| Segment | From | To | Distance | Cumulative | Surface | Elevation | Services | Notes |
+|---------|------|----|---------:|----------:|---------|-----------|----------|-------|
+| 1 | Willits depot | Ukiah connection | 25km | 25km | Country roads | -150m | Limited | Reverse of Day 3 |
+| 2 | Ukiah bypass | Cloverdale | 15km | 40km | Back roads | -100m | Water, Food | Shortcut route |
+| 3 | Cloverdale | Healdsburg | 12km | 52km | Russian River Trail | -50m | All services | Final stretch home |
+
+## 🌤️ Daily Weather Forecast
+| Day | Location | Morning | Afternoon | Evening | Precipitation | Wind | Clothing Recommendation |
+|-----|----------|---------|-----------|---------|---------------|------|-------------------------|
+| 1 | Cloverdale | 8°C, Clear | 15°C, Sunny | 12°C, Clear | 0% | Light 5km/h | Layers, light jacket |
+| 2 | Ukiah | 6°C, Partly Cloudy | 12°C, Overcast | 9°C, Cloudy | 10% | Moderate 10km/h | Warm layers, wind jacket |
+| 3 | Willits | 4°C, Overcast | 10°C, Light Rain | 7°C, Drizzle | 60% | Light 8km/h | Rain gear, warm layers |
+| 4 | Healdsburg | 7°C, Clear | 14°C, Sunny | 11°C, Clear | 0% | Light 5km/h | Celebratory layers! |
+
+## 🏨 Accommodation Overview
+| Day | Primary Option | Backup Option 1 | Backup Option 2 | Price Range | Booking Info |
+|-----|----------------|-----------------|-----------------|-------------|--------------|
+| 1 | River Rock Casino Hotel | Best Western Plus | Cloverdale KOA | $89-129 | Phone: (707) 894-7735 |
+| 2 | Hampton Inn Ukiah | Fairfield Inn | Discovery Inn | $99-149 | Phone: (707) 462-6555 |
+| 3 | Baechtel Creek Inn | Willits KOA | Evergreen Lodge | $79-119 | Phone: (707) 459-9063 |
+```
+
+## 🌤️ **WEATHER FORECAST & CONDITIONS**
+
+Based on current forecasts for late December 2024, expect typical Northern California winter conditions with mild temperatures and occasional rain. The weather will be generally favorable for cycling with proper gear preparation.
+
+**Daily Weather Details:**
+
+**Day 1 (Dec 28) - Healdsburg to Cloverdale:**
+- Morning: Clear skies, 8°C, light frost possible on grass
+- Afternoon: Sunny conditions, reaching 15°C, perfect cycling weather  
+- Evening: Clear and cool, dropping to 12°C by arrival
+- Precipitation: 0% chance of rain
+- Wind: Light breeze from northwest at 5km/h
+- **Clothing Rec**: Start with warm layers, shed to t-shirt by afternoon, light jacket for evening
+
+**Day 2 (Dec 29) - Cloverdale to Ukiah:**
+- Morning: Partly cloudy, 6°C, may feel cooler on climbs
+- Afternoon: Overcast conditions, 12°C, comfortable for effort
+- Evening: Cloudy skies, 9°C, jacket needed
+- Precipitation: 10% chance of light sprinkles
+- Wind: Moderate from west at 10km/h, may affect climbs
+- **Clothing Rec**: Warm base layers, wind-resistant outer layer, pack light rain protection
+
+## 🏨 **ACCOMMODATION DETAILS**
+
+**Day 1: River Rock Casino Hotel, Cloverdale**
+- **Address**: 3250 Hwy 128, Geyserville, CA 95441
+- **Distance from route**: 2km detour (worth it for amenities)
+- **Current Rate**: $89-109/night (Dec 2024 rates)
+- **Amenities**: Pool, restaurant, casino, secure bike storage
+- **Booking**: (707) 857-2777 or online at riverrockcasino.com
+- **Bike Facilities**: Covered bike storage, wash station
+- **Food Options**: On-site restaurant, room service until 11pm
+
+**Backup Options Day 1:**
+- **Best Western Plus Wine Country Inn**: $99-129, downtown Cloverdale, (707) 894-9000
+- **Cloverdale KOA**: $45-55 for tent sites, $75-85 for cabins, (707) 894-3337
+
+## 📍 **DETAILED DAILY ITINERARIES**
+
+### **Day 1: Healdsburg → Cloverdale (32km, 2.5 hours cycling)**
+
+**Route Profile**: Easy rolling hills through wine country with one moderate climb
+**Surface**: 85% paved roads, 15% bike path
+**Elevation Gain**: 150m total
+
+**Detailed Waypoints:**
+
+**0km - Healdsburg Plaza (Start)**
+- Depart from town square, stock up at Oakville Grocery (opens 7am)
+- Public restrooms, water fountains, coffee at Flying Goat
+- Head north on Healdsburg Avenue toward Geyserville
+
+**12km - Geyserville (1st major waypoint)**
+- **Services**: Geyserville Market (groceries), Diavola Pizzeria (opens 11am)
+- **Attractions**: Historic tasting rooms, Geyserville Museum
+- **Route Notes**: Cross under Hwy 101, continue on Geyserville Ave
+- **Water**: Public park with fountains on Main Street
+
+**20km - Asti Winery Area**
+- **Route Notes**: Enter Russian River Trail system, gravel path alongside river
+- **Scenery**: Vineyards transition to riverside forest, very scenic
+- **Surface**: Well-maintained gravel, suitable for all tire types
+- **Wildlife**: Herons, hawks, possible river otters
+
+**32km - Cloverdale Arrival**
+- **Services**: Full town amenities, Safeway, restaurants, bike shop
+- **Evening Options**: Downtown restaurants, early dinner recommended
+- **Accommodation Check-in**: River Rock Casino 4pm, shuttles available from town
+```
+
+This example demonstrates the exact level of detail and formatting you should provide for your specific trip.
 
 SEARCH FOR CURRENT INFORMATION ABOUT:
 - WEATHER: Search for detailed weather forecasts for each planned location and travel dates{f" (starting {departure_date})" if departure_date else ""}
@@ -951,6 +1066,17 @@ Create a detailed summary table at the very beginning with the following format:
 - **EXTENSIVE TIPS AND CONSIDERATIONS**: Detailed additional information based on recent web-searched information, local customs, and practical advice
 
 CRITICAL: Write at least 3000+ words with extensive detail, comprehensive waypoint coverage, and thorough explanations for each section. Make this the most comprehensive, actionable plan possible that follows the planned itinerary and incorporates extensive current, web-searched information.
+
+IMPORTANT: Follow the EXACT format structure shown in the example above, including:
+1. Trip Overview & Daily Summary table with all columns
+2. Detailed Waypoints & Segments tables for each day
+3. Daily Weather Forecast table with hourly details
+4. Accommodation Overview table with multiple options
+5. Detailed weather section with daily breakdowns
+6. Comprehensive accommodation details with specific information
+7. Detailed daily itineraries with extensive waypoint descriptions
+
+Match the level of detail, formatting, and comprehensive information shown in the example for your specific trip route and destinations.
 """
 
     try:
@@ -958,7 +1084,7 @@ CRITICAL: Write at least 3000+ words with extensive detail, comprehensive waypoi
             model="gpt-4o",
             messages=[
                 {"role": "system",
-                    "content": "You are an expert bikepacking guide with extensive knowledge of routes, gear, safety, and local attractions worldwide. You have access to current web information and should search for up-to-date details about: 1) WEATHER - Get detailed forecasts for all locations and travel dates, 2) ACCOMMODATIONS - Find specific places to stay with current availability, pricing, and booking information, 3) Trail conditions, closures, and safety alerts, 4) Local services (bike shops, restaurants, stores) with current hours and status. CRITICAL: You must provide EXTREMELY detailed, comprehensive, and verbose responses. MANDATORY: Start with comprehensive summary tables showing daily overview, detailed waypoint segments, weather forecasts, and accommodation options in nicely formatted markdown tables. Include extensive waypoint information, detailed descriptions, and thorough explanations. Always provide current, accurate, searchable information in your recommendations. Write at least 3000+ words with extensive detail for each section."},
+                    "content": "You are an expert bikepacking guide with extensive knowledge of routes, gear, safety, and local attractions worldwide. You have access to current web information and should search for up-to-date details about: 1) WEATHER - Get detailed forecasts for all locations and travel dates, 2) ACCOMMODATIONS - Find specific places to stay with current availability, pricing, and booking information, 3) Trail conditions, closures, and safety alerts, 4) Local services (bike shops, restaurants, stores) with current hours and status. CRITICAL: You must provide EXTREMELY detailed, comprehensive, and verbose responses following the EXACT format shown in the example. MANDATORY: Start with comprehensive summary tables showing daily overview, detailed waypoint segments, weather forecasts, and accommodation options in nicely formatted markdown tables exactly as demonstrated. Include extensive waypoint information, detailed descriptions, and thorough explanations matching the example format. Always provide current, accurate, searchable information in your recommendations. Write at least 3000+ words with extensive detail for each section, following the structure provided in the example."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
@@ -1501,6 +1627,8 @@ def main():
     parser.add_argument("--departure-date", help="Departure date (YYYY-MM-DD format) for weather and seasonal planning")
     parser.add_argument("-i", "--interactive", action="store_true",
                         help="Enable interactive mode to ask preference questions")
+    parser.add_argument("--desires", nargs='*', help="List of desires for the trip (e.g., scenic views, local food)")
+
     parser.add_argument("-p", "--profile", default="profile.yml",
                         help="Path to YAML profile file with preferences (default: profile.yml)")
 
@@ -1513,10 +1641,13 @@ def main():
     # Get user preferences (either interactive or from profile)
     preferences = get_user_preferences(interactive=args.interactive, profile_path=args.profile)
 
+    if args.desires:
+        print(f"\n🌟 Desires for the trip: {', '.join(args.desires)}")
+
     print(f"\n🧠 Planning your tour itinerary (determining waypoints and overnight stops)...")
 
     # Step 1: Plan the tour itinerary first
-    itinerary = plan_tour_itinerary(args.start, args.end, args.nights, preferences, args.departure_date)
+    itinerary = plan_tour_itinerary(args.start, args.end, args.nights, preferences, args.desires or [], args.departure_date)
 
     print(f"✅ Itinerary planned with {len(itinerary.get('itinerary', {}))} days")
 

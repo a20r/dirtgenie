@@ -10,6 +10,7 @@ export interface TripPreferences {
 }
 
 export interface TripPlanRequest {
+    desires: string[]; // Add desires property
     start_location: string;
     end_location: string;
     nights: number;
