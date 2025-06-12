@@ -6,8 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile.simple
     ports:
-      - "80:80"
-      - "8000:8000"
+      - 80:80
+      - 8000:80
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}

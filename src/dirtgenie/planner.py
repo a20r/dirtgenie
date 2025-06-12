@@ -337,17 +337,20 @@ def ask_follow_up_questions() -> Dict[str, str]:
     print("2. Gravel bike (700x32-40c)")
     print("3. Mountain bike (26\", 27.5\", or 29\")")
     print("4. Other/Custom")
-    
+
     while True:
         tire_choice = input("Choose option (1-4): ").strip()
         if tire_choice == '1':
-            preferences['tire_size'] = input("Specific size (e.g., 700x25c) or press Enter for 700x25c: ").strip() or "700x25c"
+            preferences['tire_size'] = input(
+                "Specific size (e.g., 700x25c) or press Enter for 700x25c: ").strip() or "700x25c"
             break
         elif tire_choice == '2':
-            preferences['tire_size'] = input("Specific size (e.g., 700x35c) or press Enter for 700x35c: ").strip() or "700x35c"
+            preferences['tire_size'] = input(
+                "Specific size (e.g., 700x35c) or press Enter for 700x35c: ").strip() or "700x35c"
             break
         elif tire_choice == '3':
-            preferences['tire_size'] = input("Specific size (e.g., 29\" x 2.25in) or press Enter for 29\" x 2.1in: ").strip() or "29\" x 2.1in"
+            preferences['tire_size'] = input(
+                "Specific size (e.g., 29\" x 2.25in) or press Enter for 29\" x 2.1in: ").strip() or "29\" x 2.1in"
             break
         elif tire_choice == '4':
             preferences['tire_size'] = input("Enter your tire size (e.g., 650b x 47mm): ").strip() or "700x35c"
@@ -587,35 +590,117 @@ Based on tire size "{preferences.get('tire_size', '700x35c (Gravel - Standard)')
 - If tire size contains "2.1", "2.25", "2.35", or "2.8": Can handle mountain bike trails, singletrack, and rougher terrain
 - Always match route surface recommendations to tire capabilities for safety and comfort
 
-Return the plan in this exact JSON format:
+Return the plan in this exact JSON format with EXTENSIVE DETAIL:
 
 {{
     "itinerary": {{
         "day_1": {{
             "start_location": "{start}",
             "end_location": "Specific Town/City Name",
+            "waypoints": [
+                {{
+                    "name": "Specific landmark, town, or point of interest",
+                    "distance_from_start_km": 15,
+                    "description": "Detailed description of this waypoint, why it's notable, services available",
+                    "services": ["food", "water", "restrooms", "bike shop", "accommodation"]
+                }},
+                {{
+                    "name": "Another specific waypoint",
+                    "distance_from_start_km": 35,
+                    "description": "Another detailed description with specific attractions or services",
+                    "services": ["grocery store", "restaurant", "scenic viewpoint"]
+                }},
+                {{
+                    "name": "Third waypoint or town",
+                    "distance_from_start_km": 55,
+                    "description": "More detailed descriptions of what makes this stop worthwhile",
+                    "services": ["accommodation", "food", "historic site"]
+                }}
+            ],
             "overnight_location": "Specific accommodation name or camping area (search for real, bookable options with current availability)",
-            "highlights": ["attraction 1", "attraction 2"],
-            "estimated_distance_km": 75
+            "accommodation_details": {{
+                "name": "Specific accommodation name",
+                "type": "campground/hotel/hostel/B&B",
+                "address": "Full address",
+                "phone": "Contact number",
+                "pricing": "$XX per night",
+                "amenities": ["showers", "wifi", "restaurant", "bike storage"],
+                "booking_info": "How to book, website, or reservation requirements"
+            }},
+            "highlights": ["attraction 1 with details", "attraction 2 with details", "attraction 3 with details"],
+            "estimated_distance_km": 75,
+            "elevation_gain_m": 850,
+            "difficulty": "moderate",
+            "surface_types": ["paved road: 40km", "gravel path: 25km", "dirt trail: 10km"],
+            "food_stops": ["Restaurant Name at km 20", "Grocery Store at km 45"],
+            "water_sources": ["Public fountain at km 10", "Stream crossing at km 30", "Town well at km 60"]
         }},
         "day_2": {{
             "start_location": "Previous end location",
             "end_location": "Next Town/City Name",
+            "waypoints": [
+                {{
+                    "name": "Specific waypoint for day 2",
+                    "distance_from_start_km": 20,
+                    "description": "Detailed description of this day 2 waypoint",
+                    "services": ["relevant services"]
+                }},
+                {{
+                    "name": "Another day 2 waypoint",
+                    "distance_from_start_km": 45,
+                    "description": "Another detailed waypoint description",
+                    "services": ["more services"]
+                }}
+            ],
             "overnight_location": "Specific accommodation name or camping area (search for real, bookable options with current availability)",
-            "highlights": ["attraction 1", "attraction 2"],
-            "estimated_distance_km": 80
+            "accommodation_details": {{
+                "name": "Specific accommodation name for day 2",
+                "type": "campground/hotel/hostel/B&B",
+                "address": "Full address",
+                "phone": "Contact number",
+                "pricing": "$XX per night",
+                "amenities": ["relevant amenities"],
+                "booking_info": "Booking details"
+            }},
+            "highlights": ["day 2 attraction 1 with details", "day 2 attraction 2 with details"],
+            "estimated_distance_km": 80,
+            "elevation_gain_m": 650,
+            "difficulty": "easy",
+            "surface_types": ["surface breakdown for day 2"],
+            "food_stops": ["Food options for day 2"],
+            "water_sources": ["Water sources for day 2"]
         }},
-        ...continue for all {nights + 1} days...
+        ...continue for all {nights + 1} days with the same level of detail...
         "day_{nights + 1}": {{
             "start_location": "Previous end location",
             "end_location": "{end}",
+            "waypoints": [
+                {{
+                    "name": "Final day waypoint",
+                    "distance_from_start_km": 25,
+                    "description": "Final day waypoint details",
+                    "services": ["final services"]
+                }}
+            ],
             "overnight_location": "Arrive at destination",
-            "highlights": ["final attractions"],
-            "estimated_distance_km": 65
+            "highlights": ["final day attractions with details"],
+            "estimated_distance_km": 65,
+            "elevation_gain_m": 400,
+            "difficulty": "moderate",
+            "surface_types": ["final day surface types"],
+            "food_stops": ["final day food options"],
+            "water_sources": ["final day water sources"]
         }}
     }},
     "total_estimated_distance": 400,
-    "route_summary": "Brief description of the overall route"
+    "total_elevation_gain": 2000,
+    "route_summary": "Comprehensive description of the overall route including terrain, highlights, and challenges",
+    "best_months": ["April", "May", "September", "October"],
+    "gear_recommendations": ["specific gear for this route"],
+    "emergency_contacts": ["relevant emergency contacts for the route area"],
+    "permits_required": ["any permits or fees needed"],
+    "difficulty_rating": "beginner/intermediate/advanced",
+    "estimated_total_time": "X days of cycling"
 }}
 
 Be specific with location names (include city, state/province). Choose real places that make sense for bikepacking.
@@ -631,7 +716,7 @@ IMPORTANT: Use web search to find:
             model="gpt-4o",
             messages=[
                 {"role": "system",
-                    "content": "You are an expert bikepacking tour planner with access to current web information. Always respond with valid JSON exactly as requested. IMPORTANT: Use your web search capabilities to find current information about: 1) Specific accommodations (campgrounds, hotels, hostels) with availability, pricing, and booking details, 2) Current weather forecasts for the planned travel dates and locations, 3) Trail conditions and any closures, 4) Local attractions and their current operating status. Search for real, specific places and current information."},
+                    "content": "You are an expert bikepacking tour planner with access to current web information. Always respond with valid JSON exactly as requested. CRITICAL: You must be extremely detailed and verbose in your response. IMPORTANT: Use your web search capabilities to find current information about: 1) Specific accommodations (campgrounds, hotels, hostels) with availability, pricing, and booking details, 2) Current weather forecasts for the planned travel dates and locations, 3) Trail conditions and any closures, 4) Local attractions and their current operating status. Search for real, specific places and current information. Include MANY waypoints and detailed descriptions for each day."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
@@ -747,7 +832,7 @@ def generate_trip_plan(start: str, end: str, nights: int, preferences: Dict[str,
 
     # Create detailed prompt for OpenAI
     departure_info = f"\n- Departure date: {departure_date}" if departure_date else ""
-    
+
     prompt = f"""
 You are an expert bikepacking trip planner with access to current web information. Create a detailed {nights}-night bikepacking itinerary based on the planned route.
 
@@ -780,17 +865,23 @@ USER PREFERENCES:
 - Budget: {preferences.get('budget', 'moderate')}
 - Interests: {', '.join(preferences.get('interests', []))}
 
-REQUIREMENTS:
+REQUIREMENTS FOR MAXIMUM DETAIL:
 1. Use the planned itinerary as your foundation
 2. PRIORITY: Search for and include current weather forecasts for each location and travel date
 3. PRIORITY: Search for specific accommodation options with current availability, exact pricing, and booking details
-4. Enhance each day with detailed recommendations based on current web-searched information
-5. Include multiple accommodation options per location (primary + backup options)
-6. Add points of interest, food stops, and resupply opportunities with current operating status and hours
-7. Include packing suggestions based on current weather forecasts and seasonal conditions
-8. Provide detailed weather information: temperatures, precipitation, wind, and seasonal considerations
-9. Include emergency contacts and backup plans with up-to-date contact information
-10. Search for any current events, construction, or alerts that might affect the planned route
+4. MANDATORY: Include detailed waypoints every 15-20km along the route with specific landmarks, towns, services, and points of interest
+5. MANDATORY: Provide comprehensive descriptions of each waypoint including what makes it noteworthy, available services, and local attractions
+6. Enhance each day with detailed recommendations based on current web-searched information
+7. Include multiple accommodation options per location (primary + backup options)
+8. Add extensive points of interest, food stops, and resupply opportunities with current operating status and hours
+9. Include comprehensive packing suggestions based on current weather forecasts and seasonal conditions
+10. Provide detailed weather information: temperatures, precipitation, wind, and seasonal considerations
+11. Include emergency contacts and backup plans with up-to-date contact information
+12. Search for any current events, construction, or alerts that might affect the planned route
+13. MANDATORY: Write detailed descriptions for each section - aim for comprehensive, verbose explanations
+14. MANDATORY: Include surface type breakdowns for each day (km of paved vs gravel vs dirt)
+15. MANDATORY: Include elevation profiles, difficulty ratings, and technical challenges for each day
+16. MANDATORY: Provide detailed food and water planning with specific locations and distances
 
 ROUTE SURFACE RECOMMENDATIONS:
 Based on tire size "{preferences.get('tire_size', '700x35c (Gravel - Standard)')}" and terrain preference "{preferences.get('terrain', 'mixed')}":
@@ -799,19 +890,67 @@ Based on tire size "{preferences.get('tire_size', '700x35c (Gravel - Standard)')
 - If tire size contains "2.1", "2.25", "2.35", or "2.8": Suitable for mountain bike trails, singletrack, and rougher terrain
 - Include specific surface type warnings and recommendations for each route segment based on tire capabilities
 
-FORMAT as detailed markdown with:
-- **WEATHER SECTION**: Detailed current forecasts for each location and travel day
-- **ACCOMMODATION SECTION**: Specific lodging options with current availability, pricing, and booking information
-- Trip overview matching the planned route with current conditions
-- Daily itineraries with actual distances, elevation, accommodation options, highlights
-- Multiple accommodation options per location (primary + backup choices)
-- Specific recommendations for each planned waypoint with current web-searched information
-- Packing list adapted to current weather forecasts and conditions
-- Safety and emergency information with current contacts and conditions
-- Budget estimates with current, researched pricing
-- Additional tips and considerations based on recent web-searched information
+FORMAT as extremely detailed markdown with EXTENSIVE SECTIONS:
 
-Make this a comprehensive, actionable plan that follows the planned itinerary and incorporates current, web-searched information.
+**FIRST: START WITH A COMPREHENSIVE TRIP SUMMARY TABLE**
+Create a detailed summary table at the very beginning with the following format:
+
+```
+# 🚴‍♂️ TRIP OVERVIEW & DAILY SUMMARY
+
+## 📊 Trip Summary Table
+
+| Day | Date | Start Location | End Location | Overnight | Daily Distance | Cumulative | Weather | Highlights |
+|-----|------|----------------|--------------|-----------|----------------|------------|---------|------------|
+| 1 | [Date] | [Start] | [Town/City] | [Accommodation Name] | XXkm | XXkm | ☀️ 22°C, Clear | Scenic valley, Historic site |
+| 2 | [Date] | [Previous End] | [Next Town] | [Accommodation Name] | XXkm | XXXkm | ⛅ 18°C, Partly Cloudy | Mountain views, Local market |
+| ... | ... | ... | ... | ... | ... | ... | ... | ... |
+
+## 🗺️ Detailed Waypoints & Segments
+
+### Day 1: [Start] → [End] (XXkm)
+| Segment | From | To | Distance | Cumulative | Surface | Elevation | Services | Notes |
+|---------|------|----|---------:|----------:|---------|-----------|----------|-------|
+| 1 | [Start] | [Waypoint 1] | 15km | 15km | Paved road | +150m | Water, Food | Historic downtown area |
+| 2 | [Waypoint 1] | [Waypoint 2] | 20km | 35km | Gravel path | +250m | Restrooms | Scenic riverside trail |
+| 3 | [Waypoint 2] | [End Location] | 25km | 60km | Mixed terrain | +100m | Accommodation, Food | Arrival at overnight stop |
+
+### Day 2: [Previous End] → [Next End] (XXkm)
+| Segment | From | To | Distance | Cumulative | Surface | Elevation | Services | Notes |
+|---------|------|----|---------:|----------:|---------|-----------|----------|-------|
+| ... | ... | ... | ... | ... | ... | ... | ... | ... |
+
+## 🌤️ Daily Weather Forecast
+| Day | Location | Morning | Afternoon | Evening | Precipitation | Wind | Clothing Recommendation |
+|-----|----------|---------|-----------|---------|---------------|------|-------------------------|
+| 1 | [Location] | 15°C, Clear | 22°C, Sunny | 18°C, Clear | 0% | Light 5km/h | Layers, light jacket |
+| 2 | [Location] | 12°C, Cloudy | 18°C, Overcast | 14°C, Light rain | 30% | Moderate 15km/h | Rain gear, warm layers |
+| ... | ... | ... | ... | ... | ... | ... | ... |
+
+## 🏨 Accommodation Overview
+| Day | Primary Option | Backup Option 1 | Backup Option 2 | Price Range | Booking Info |
+|-----|----------------|-----------------|-----------------|-------------|--------------|
+| 1 | [Hotel/Campground Name] | [Alternative 1] | [Alternative 2] | $XX-XX | Phone: XXX, Website: XXX |
+| 2 | [Hotel/Campground Name] | [Alternative 1] | [Alternative 2] | $XX-XX | Phone: XXX, Website: XXX |
+| ... | ... | ... | ... | ... | ... |
+```
+
+**THEN CONTINUE WITH ALL THE DETAILED SECTIONS:**
+- **WEATHER SECTION**: Comprehensive current forecasts for each location and travel day with hourly breakdowns, seasonal considerations, and clothing recommendations
+- **ACCOMMODATION SECTION**: Extensive lodging options with current availability, exact pricing, full contact information, amenities, and detailed booking instructions
+- **DETAILED WAYPOINT ANALYSIS**: For each day, include waypoints every 15-20km with comprehensive descriptions, services, attractions, and recommendations
+- **ROUTE SURFACE ANALYSIS**: Detailed breakdown of surface types, technical challenges, and tire suitability for each segment
+- **ELEVATION AND DIFFICULTY PROFILES**: Comprehensive analysis of climbs, descents, and technical challenges for each day
+- Trip overview matching the planned route with current conditions and extensive background information
+- **COMPREHENSIVE DAILY ITINERARIES**: Include actual distances, elevation profiles, multiple accommodation options, extensive highlights, detailed waypoint descriptions, food planning, water sources, and resupply opportunities
+- Multiple accommodation options per location (primary + 2-3 backup choices with full details)
+- **EXTENSIVE WAYPOINT RECOMMENDATIONS**: Detailed descriptions of each planned waypoint with current web-searched information, historical context, and practical tips
+- **COMPREHENSIVE PACKING LIST**: Detailed packing recommendations adapted to current weather forecasts, terrain, and conditions
+- **DETAILED SAFETY SECTION**: Emergency information with current contacts, evacuation routes, medical facilities, and risk assessments
+- **DETAILED BUDGET ANALYSIS**: Comprehensive budget estimates with current, researched pricing for all aspects of the trip
+- **EXTENSIVE TIPS AND CONSIDERATIONS**: Detailed additional information based on recent web-searched information, local customs, and practical advice
+
+CRITICAL: Write at least 3000+ words with extensive detail, comprehensive waypoint coverage, and thorough explanations for each section. Make this the most comprehensive, actionable plan possible that follows the planned itinerary and incorporates extensive current, web-searched information.
 """
 
     try:
@@ -819,7 +958,7 @@ Make this a comprehensive, actionable plan that follows the planned itinerary an
             model="gpt-4o",
             messages=[
                 {"role": "system",
-                    "content": "You are an expert bikepacking guide with extensive knowledge of routes, gear, safety, and local attractions worldwide. You have access to current web information and should search for up-to-date details about: 1) WEATHER - Get detailed forecasts for all locations and travel dates, 2) ACCOMMODATIONS - Find specific places to stay with current availability, pricing, and booking information, 3) Trail conditions, closures, and safety alerts, 4) Local services (bike shops, restaurants, stores) with current hours and status. Always provide current, accurate, searchable information in your recommendations."},
+                    "content": "You are an expert bikepacking guide with extensive knowledge of routes, gear, safety, and local attractions worldwide. You have access to current web information and should search for up-to-date details about: 1) WEATHER - Get detailed forecasts for all locations and travel dates, 2) ACCOMMODATIONS - Find specific places to stay with current availability, pricing, and booking information, 3) Trail conditions, closures, and safety alerts, 4) Local services (bike shops, restaurants, stores) with current hours and status. CRITICAL: You must provide EXTREMELY detailed, comprehensive, and verbose responses. MANDATORY: Start with comprehensive summary tables showing daily overview, detailed waypoint segments, weather forecasts, and accommodation options in nicely formatted markdown tables. Include extensive waypoint information, detailed descriptions, and thorough explanations. Always provide current, accurate, searchable information in your recommendations. Write at least 3000+ words with extensive detail for each section."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
@@ -1395,7 +1534,8 @@ def main():
     print(f"\n🤖 Generating your detailed trip plan with OpenAI...")
 
     # Step 3: Generate detailed trip plan based on the itinerary and route
-    trip_plan = generate_trip_plan(args.start, args.end, args.nights, preferences, itinerary, directions, args.departure_date)
+    trip_plan = generate_trip_plan(args.start, args.end, args.nights, preferences,
+                                   itinerary, directions, args.departure_date)
 
     print(f"\n📍 Creating detailed route GeoJSON...")
 
