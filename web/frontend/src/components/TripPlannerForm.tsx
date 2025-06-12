@@ -101,18 +101,6 @@ const TripPlannerForm: React.FC<TripPlannerFormProps> = ({
         }
     };
 
-    const handleInterestsChange = (interest: string, checked: boolean) => {
-        setFormData(prev => ({
-            ...prev,
-            preferences: {
-                ...prev.preferences,
-                interests: checked
-                    ? [...prev.preferences.interests, interest]
-                    : prev.preferences.interests.filter(i => i !== interest)
-            }
-        }));
-    };
-
     const handleDesireKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Tab' && desireInput.trim()) {
             e.preventDefault();
