@@ -98,7 +98,7 @@ The web application can be deployed using Docker:
 
 ```bash
 # Build and run locally
-docker build -f Dockerfile.simple -t dirtgenie-web .
+docker build -t dirtgenie-web .
 docker run -p 80:80 dirtgenie-web
 
 # The app will be available at http://localhost
@@ -158,7 +158,7 @@ dirtgenie/
 │   └── dirtgenie-web        # Legacy web entry (deprecated)
 ├── tests/                   # Test suite
 ├── docs/                    # Documentation
-├── Dockerfile.simple        # Docker configuration
+├── Dockerfile              # Docker configuration
 ├── nginx.conf              # Nginx configuration
 ├── railway.json            # Railway deployment config
 ├── requirements.txt        # Core dependencies

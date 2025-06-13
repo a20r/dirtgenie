@@ -82,7 +82,7 @@ npm start
 ### Docker (Unified Container)
 ```bash
 # Build the unified container (from project root)
-docker build -f Dockerfile.simple -t dirtgenie .
+docker build -t dirtgenie .
 
 # Run with environment variables
 docker run -p 80:80 \

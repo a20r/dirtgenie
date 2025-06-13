@@ -43,13 +43,13 @@ RUN npm run build
 WORKDIR /app
 
 # Configure nginx to serve frontend and proxy API calls
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY web/nginx.conf /etc/nginx/nginx.conf
 
 # Create supervisor configuration
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY web/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Create startup script
-COPY start-unified.sh /app/start-unified.sh
+COPY web/start-unified.sh /app/start-unified.sh
 RUN chmod +x /app/start-unified.sh
 
 # Create non-root user and set permissions
