@@ -1,6 +1,6 @@
 # DirtGenie Web Application
 
-A modern web frontend for DirtGenie, built with React and FastAPI, providing an alternative to the Streamlit dashboard.
+A modern web frontend for DirtGenie, built with React and FastAPI, providing a complete bikepacking trip planning solution.
 
 ## Features
 
@@ -10,6 +10,8 @@ A modern web frontend for DirtGenie, built with React and FastAPI, providing an 
 - 📅 **Departure Date Planning**: Weather and seasonal planning capabilities
 - ✏️ **Trip Revisions**: Easy plan modifications with AI assistance
 - 📱 **Mobile Friendly**: Responsive design that works on all devices
+- 🔄 **Export Options**: Download trip packages and export to Notion
+- 🔐 **API Key Management**: User-provided API keys for secure, cost-controlled usage
 
 ## Architecture
 
@@ -17,6 +19,7 @@ A modern web frontend for DirtGenie, built with React and FastAPI, providing an 
 - RESTful API built with FastAPI
 - Direct integration with DirtGenie planner modules
 - CORS enabled for frontend communication
+- User-provided API key handling
 - Automatic API documentation at `/docs`
 
 ### Frontend (React + TypeScript)
@@ -24,23 +27,17 @@ A modern web frontend for DirtGenie, built with React and FastAPI, providing an 
 - Tailwind CSS for styling
 - Axios for API communication
 - React Markdown for trip plan rendering
+- API key setup and management
 
 ## Quick Start
 
 1. **Prerequisites**:
    - Python 3.8+
    - Node.js 16+
-   - OpenAI API Key
-   - Google Maps API Key
+   - OpenAI API Key ([Get one here](https://platform.openai.com/api-keys))
+   - Google Maps API Key ([Get one here](https://developers.google.com/maps/documentation/javascript/get-api-key))
 
-2. **Environment Setup**:
-   ```bash
-   # Set your API keys in the parent directory's .env file
-   echo "OPENAI_API_KEY=your_key_here" >> ../.env
-   echo "GOOGLE_MAPS_API_KEY=your_key_here" >> ../.env
-   ```
-
-3. **Start the Application**:
+2. **Start the Application**:
    ```bash
    ./start.sh
    ```
@@ -77,6 +74,27 @@ npm start
 - `POST /api/revise-trip` - Revise an existing trip
 - `GET /api/tire-options` - Get available tire sizes
 - `POST /api/save-profile` - Save user profile
+- `POST /api/download-trip-package` - Download trip files
+- `POST /api/export-to-notion` - Export to Notion
+
+## Production Deployment
+
+### Docker (Unified Container)
+```bash
+# Build the unified container (from project root)
+docker build -f Dockerfile.simple -t dirtgenie .
+
+# Run with environment variables
+docker run -p 80:80 \
+  -e OPENAI_API_KEY=your_key \
+  -e GOOGLE_MAPS_API_KEY=your_key \
+  dirtgenie
+```
+
+### Railway Deployment
+1. Deploy using the `railway.json` configuration in the project root
+2. Users will be prompted to enter their own API keys on first visit
+3. No need to set API keys as environment variables in Railway
 
 ## Development
 
@@ -86,48 +104,18 @@ The application is structured for easy development:
 - **Frontend**: React with hot reload
 - **API Communication**: Typed interfaces with TypeScript
 - **Styling**: Tailwind CSS utility classes
+- **API Keys**: Session-based storage for user security
 
-## Production Deployment
+## User Experience
 
-For production deployment:
+### First-Time Users
+1. Visit the application URL
+2. Enter OpenAI and Google Maps API keys when prompted
+3. Keys are stored in browser session (not persistent)
+4. Start planning trips immediately
 
-1. Build the frontend:
-   ```bash
-   cd frontend && npm run build
-   ```
-
-2. Serve the backend with a production ASGI server:
-   ```bash
-   cd backend && pip install gunicorn && gunicorn main:app -k uvicorn.workers.UvicornWorker
-   ```
-
-3. Serve the built frontend with nginx or similar
-
-## Comparison to Streamlit Version
-
-| Feature           | Streamlit     | React Web App      |
-| ----------------- | ------------- | ------------------ |
-| UI Framework      | Streamlit     | React + Tailwind   |
-| State Management  | Session state | React state        |
-| Customization     | Limited       | Full control       |
-| Mobile Experience | Basic         | Responsive         |
-| API Architecture  | Monolithic    | Decoupled          |
-| Deployment        | Single app    | Frontend + Backend |
-| Performance       | Server-side   | Client-side        |
-
-## Future Enhancements
-
-- 🗺️ Interactive Leaflet map integration
-- 💾 User authentication and profile persistence
-- 📊 Trip analytics and statistics
-- 🔄 Real-time collaboration on trip planning
-- 📱 Progressive Web App (PWA) capabilities
-- 🧭 Offline route access
-
-## Contributing
-
-The web application follows modern web development best practices:
-- TypeScript for type safety
-- Component-based architecture
-- API-first design
-- Responsive design principles
+### API Key Security
+- Keys are stored in sessionStorage (cleared when browser closes)
+- Keys are sent via request headers to backend
+- No server-side storage of user API keys
+- Each user uses their own API quotas and billing
