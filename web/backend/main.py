@@ -88,11 +88,6 @@ class NotionExportRequest(BaseModel):
     end_location: Optional[str] = Field(None, description="End location")
 
 
-class ApiKeyTestRequest(BaseModel):
-    openai_key: str = Field(..., description="OpenAI API key to test")
-    google_maps_key: str = Field(..., description="Google Maps API key to test")
-
-
 class DownloadRequest(BaseModel):
     trip_plan: str = Field(..., description="Trip plan markdown")
     geojson: Optional[Dict[str, Any]] = Field(None, description="GeoJSON route data")
@@ -124,44 +119,6 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
-
-
-@app.post("/api/test-keys")
-async def test_api_keys(request: ApiKeyTestRequest):
-    """Test the provided API keys"""
-    try:
-        # Test OpenAI API key
-        try:
-            from openai import OpenAI
-            test_openai_client = OpenAI(api_key=request.openai_key)
-            # Make a minimal test request
-            test_response = test_openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": "Test"}],
-                max_tokens=1
-            )
-            if not test_response:
-                raise Exception("OpenAI API test failed")
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"OpenAI API key is invalid: {str(e)}")
-        
-        # Test Google Maps API key
-        try:
-            import googlemaps
-            test_gmaps_client = googlemaps.Client(key=request.google_maps_key)
-            # Make a minimal test request
-            test_result = test_gmaps_client.geocode("San Francisco, CA")  # type: ignore
-            if not test_result:
-                raise Exception("Google Maps API test failed")
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Google Maps API key is invalid: {str(e)}")
-        
-        return {"success": True, "message": "API keys are valid"}
-        
-    except HTTPException:
-        raise  # Re-raise HTTP exceptions
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error testing API keys: {str(e)}")
 
 
 @app.get("/api/default-profile")

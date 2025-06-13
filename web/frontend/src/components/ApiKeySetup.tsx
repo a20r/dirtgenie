@@ -24,27 +24,11 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeysSet }) => {
             sessionStorage.setItem('openai_api_key', openaiKey.trim());
             sessionStorage.setItem('google_maps_api_key', googleMapsKey.trim());
 
-            // Test the API keys by making a test call
-            const testResponse = await fetch('/api/test-keys', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    openai_key: openaiKey.trim(),
-                    google_maps_key: googleMapsKey.trim()
-                })
-            });
-
-            if (testResponse.ok) {
-                onApiKeysSet({ openaiKey: openaiKey.trim(), googleMapsKey: googleMapsKey.trim() });
-            } else {
-                const error = await testResponse.json();
-                alert(`API key validation failed: ${error.detail || 'Unknown error'}`);
-            }
+            // Simply proceed without validation - let the backend handle invalid keys
+            onApiKeysSet({ openaiKey: openaiKey.trim(), googleMapsKey: googleMapsKey.trim() });
         } catch (error) {
-            console.error('Error validating API keys:', error);
-            alert('Failed to validate API keys. Please check your connection and try again.');
+            console.error('Error setting API keys:', error);
+            alert('Failed to set API keys. Please try again.');
         } finally {
             setIsSubmitting(false);
         }

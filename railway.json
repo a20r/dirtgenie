@@ -6,6 +6,6 @@
   "deploy": {
     "startCommand": "/app/start-unified.sh",
     "healthcheckPath": "/health",
-    "healthcheckTimeout": 300
+    "healthcheckTimeout": 60
   }
 }
