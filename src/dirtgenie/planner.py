@@ -876,7 +876,7 @@ Please create a comprehensive trip plan following the example format above. Incl
     try:
         # Make API call to OpenAI
         response = openai_client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are an expert bikepacking trip planner with extensive knowledge of cycling routes, accommodations, and outdoor safety."},
                 {"role": "user", "content": prompt}
@@ -946,7 +946,7 @@ Please revise the trip plan based on the user's feedback while maintaining the s
 
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are an expert bikepacking trip planner. Revise the existing plan based on the user's feedback while maintaining high quality and practical advice."},
                 {"role": "user", "content": prompt}
