@@ -1,8 +1,8 @@
+import io
+import json
 import os
 import sys
 import zipfile
-import io
-import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -12,14 +12,16 @@ src_path = Path(__file__).parent.parent.parent / "src"
 sys.path.insert(0, str(src_path))
 
 import uvicorn
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
-from dirtgenie.planner import (create_default_profile, create_geojson, generate_trip_plan, get_bicycle_directions,
-                               get_multi_waypoint_directions, initialize_clients, load_profile, plan_tour_itinerary,
-                               revise_trip_plan_with_feedback, save_profile)
+from dirtgenie.planner import (create_default_profile, create_geojson, create_geojson_with_keys, generate_trip_plan,
+                               generate_trip_plan_with_keys, get_bicycle_directions, get_multi_waypoint_directions,
+                               get_multi_waypoint_directions_with_keys, initialize_clients, load_profile,
+                               plan_tour_itinerary, plan_tour_itinerary_with_keys, revise_trip_plan_with_feedback,
+                               save_profile)
 
 app = FastAPI(
     title="DirtGenie API",
@@ -86,6 +88,11 @@ class NotionExportRequest(BaseModel):
     end_location: Optional[str] = Field(None, description="End location")
 
 
+class ApiKeyTestRequest(BaseModel):
+    openai_key: str = Field(..., description="OpenAI API key to test")
+    google_maps_key: str = Field(..., description="Google Maps API key to test")
+
+
 class DownloadRequest(BaseModel):
     trip_plan: str = Field(..., description="Trip plan markdown")
     geojson: Optional[Dict[str, Any]] = Field(None, description="GeoJSON route data")
@@ -119,6 +126,44 @@ async def health_check():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
+@app.post("/api/test-keys")
+async def test_api_keys(request: ApiKeyTestRequest):
+    """Test the provided API keys"""
+    try:
+        # Test OpenAI API key
+        try:
+            from openai import OpenAI
+            test_openai_client = OpenAI(api_key=request.openai_key)
+            # Make a minimal test request
+            test_response = test_openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": "Test"}],
+                max_tokens=1
+            )
+            if not test_response:
+                raise Exception("OpenAI API test failed")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"OpenAI API key is invalid: {str(e)}")
+        
+        # Test Google Maps API key
+        try:
+            import googlemaps
+            test_gmaps_client = googlemaps.Client(key=request.google_maps_key)
+            # Make a minimal test request
+            test_result = test_gmaps_client.geocode("San Francisco, CA")  # type: ignore
+            if not test_result:
+                raise Exception("Google Maps API test failed")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Google Maps API key is invalid: {str(e)}")
+        
+        return {"success": True, "message": "API keys are valid"}
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error testing API keys: {str(e)}")
+
+
 @app.get("/api/default-profile")
 async def get_default_profile():
     """Get default user profile"""
@@ -150,48 +195,70 @@ async def save_user_profile(request: ProfileRequest):
 
 
 @app.post("/api/plan-trip", response_model=TripPlanResponse)
-async def plan_trip(request: TripPlanRequest, background_tasks: BackgroundTasks):
+async def plan_trip(
+    request: TripPlanRequest, 
+    background_tasks: BackgroundTasks,
+    x_openai_key: Optional[str] = Header(None),
+    x_google_maps_key: Optional[str] = Header(None)
+):
     """Plan a bikepacking trip"""
     try:
+        # Get API keys from headers (for user-supplied keys) or environment (for development)
+        openai_key = x_openai_key or os.getenv("OPENAI_API_KEY")
+        google_maps_key = x_google_maps_key or os.getenv("GOOGLE_MAPS_API_KEY")
+        
+        if not openai_key or not google_maps_key:
+            raise HTTPException(
+                status_code=400, 
+                detail="Missing API keys. Please provide OpenAI and Google Maps API keys."
+            )
+
         # Convert preferences to dict format expected by planner
         preferences = request.preferences.dict()
 
-        # Step 1: Plan the itinerary
-        itinerary = plan_tour_itinerary(
+        # Step 1: Plan the itinerary (with API keys)
+        itinerary = plan_tour_itinerary_with_keys(
             start=request.start_location,
             end=request.end_location,
             nights=request.nights,
             preferences=preferences,
             desires=request.desires,
-            departure_date=request.departure_date
+            departure_date=request.departure_date,
+            openai_key=openai_key,
+            google_maps_key=google_maps_key
         )
 
-        # Step 2: Get route directions
-        directions = get_multi_waypoint_directions(itinerary)
+        # Step 2: Get route directions (with API keys)
+        directions = get_multi_waypoint_directions_with_keys(
+            itinerary, 
+            google_maps_key=google_maps_key
+        )
 
         if not directions or 'legs' not in directions:
             raise HTTPException(
                 status_code=400, detail="Could not find a bicycle route between the specified locations")
 
-        # Step 3: Generate detailed trip plan
-        trip_plan = generate_trip_plan(
+        # Step 3: Generate detailed trip plan (with API keys)
+        trip_plan = generate_trip_plan_with_keys(
             start=request.start_location,
             end=request.end_location,
             nights=request.nights,
             preferences=preferences,
             itinerary=itinerary,
             directions=directions,
-            departure_date=request.departure_date
+            departure_date=request.departure_date,
+            openai_key=openai_key
         )
 
         # Step 4: Create GeoJSON
-        geojson_data = create_geojson(
+        geojson_data = create_geojson_with_keys(
             start=request.start_location,
             end=request.end_location,
             directions=directions,
             preferences=preferences,
             trip_plan=trip_plan,
-            itinerary=itinerary
+            itinerary=itinerary,
+            google_maps_key=google_maps_key
         )
 
         # Calculate total distance

@@ -65,6 +65,8 @@ dirtgenie_*.geojson
 docs/_build/
 docs/
 
+node_modules/
+
 # Test outputs
 .pytest_cache/
 .coverage

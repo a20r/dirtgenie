@@ -50,7 +50,7 @@ const TripResults: React.FC<TripResultsProps> = ({ response, onReviseClick }) =>
         try {
             // Clean markdown content for Notion
             let cleanContent = response.trip_plan;
-            
+
             // Remove any code block wrapping
             if (cleanContent.startsWith('```markdown\n')) {
                 cleanContent = cleanContent.replace(/^```markdown\n/, '').replace(/\n```$/, '');
@@ -76,18 +76,18 @@ ${cleanContent}
 
             // Copy to clipboard
             await navigator.clipboard.writeText(notionContent);
-            
+
             // Show success message with instructions
             const shouldOpenNotion = window.confirm(`✅ Trip plan copied to clipboard!\n\n🚀 Ready to import to Notion:\n\n1. Click "OK" to open Notion\n2. Create a new page (or go to existing page)\n3. Paste (Ctrl/Cmd + V)\n4. Notion will automatically format the markdown\n5. Customize the page as needed\n\nClick OK to open Notion now, or Cancel to stay here.`);
-            
+
             if (shouldOpenNotion) {
                 // Open Notion in new tab
                 window.open('https://www.notion.so/new', '_blank');
             }
-            
+
         } catch (error) {
             console.error('Notion import error:', error);
-            
+
             // Fallback for browsers that don't support clipboard API
             try {
                 const textArea = document.createElement('textarea');
@@ -100,9 +100,9 @@ ${cleanContent}
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-                
+
                 alert(`✅ Trip plan copied to clipboard!\n\nTo import to Notion:\n1. Open Notion (notion.so)\n2. Create a new page\n3. Paste (Ctrl/Cmd + V)\n4. Notion will auto-format the markdown`);
-                
+
                 if (window.confirm('Open Notion now?')) {
                     window.open('https://www.notion.so/new', '_blank');
                 }

@@ -688,12 +688,12 @@ IMPORTANT: Use web search to find:
             itinerary_json = itinerary_json[7:]
         if itinerary_json.endswith('```'):
             itinerary_json = itinerary_json[:-3]
-        
+
         # Find the start and end of the JSON object
         json_start = itinerary_json.find('{')
         if json_start == -1:
             raise ValueError("No JSON object found in response")
-        
+
         # Find the matching closing brace by counting braces
         brace_count = 0
         json_end = -1
@@ -705,7 +705,7 @@ IMPORTANT: Use web search to find:
                 if brace_count == 0:
                     json_end = i + 1
                     break
-        
+
         if json_end == -1:
             # Fallback: try to parse the whole cleaned content
             json_content = itinerary_json.strip()
@@ -807,6 +807,10 @@ def generate_trip_plan(start: str, end: str, nights: int, preferences: Dict[str,
     total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000  # Convert to km
     total_duration = sum(leg['duration']['value'] for leg in directions['legs']) / 3600  # Convert to hours
 
+    # Format route and itinerary information
+    route_info = format_route_info(directions)
+    itinerary_text = format_itinerary_for_prompt(itinerary)
+
     # Create detailed prompt for OpenAI
     departure_info = f"\n- Departure date: {departure_date}" if departure_date else ""
 
@@ -821,868 +825,505 @@ You are an expert bikepacking trip planner with access to current web informatio
 EXAMPLE OF EXCELLENT OUTPUT FORMAT:
 Here is an example of the exact format and level of detail you should provide:
 
-```
 # 🚴‍♂️ TRIP OVERVIEW & DAILY SUMMARY
 
 ## 📊 Trip Summary Table
 
 | Day | Date | Start Location | End Location | Overnight | Daily Distance | Cumulative | Weather | Highlights |
 |-----|------|----------------|--------------|-----------|----------------|------------|---------|------------|
-| 1 | Dec 28, 2024 | Healdsburg, CA | Cloverdale, CA | River Rock Casino Hotel | 32km | 32km | ☀️ 15°C, Clear | Russian River Trail, Vineyard Views |
-| 2 | Dec 29, 2024 | Cloverdale, CA | Ukiah, CA | Hampton Inn & Suites Ukiah | 45km | 77km | ⛅ 12°C, Partly Cloudy | Hopland Pass, Redwood Valley |
-| 3 | Dec 30, 2024 | Ukiah, CA | Willits, CA | Baechtel Creek Inn | 48km | 125km | 🌧️ 10°C, Light Rain | Redwood Groves, Historic Depot |
-| 4 | Dec 31, 2024 | Willits, CA | Healdsburg, CA | Back home! | 52km | 177km | ☀️ 14°C, Sunny | New Year's Eve return, Celebration |
+| 1 | Sep 15 | San Francisco | Half Moon Bay | Camping | 45km | 45km | Sunny 22°C | Golden Gate Bridge, Pacific Coast |
+| 2 | Sep 16 | Half Moon Bay | Santa Cruz | Hotel | 52km | 97km | Partly Cloudy 20°C | Lighthouse, Beaches |
 
-## 🗺️ Detailed Waypoints & Segments
+## 🗺️ ROUTE DETAILS
+[Detailed route information follows based on actual directions]
 
-### Day 1: Healdsburg → Cloverdale (32km)
-| Segment | From | To | Distance | Cumulative | Surface | Elevation | Services | Notes |
-|---------|------|----|---------:|----------:|---------|-----------|----------|-------|
-| 1 | Healdsburg Plaza | Geyserville | 12km | 12km | Paved road | +50m | Water, Food | Historic downtown, wine tasting |
-| 2 | Geyserville | Asti | 8km | 20km | Russian River Trail | +25m | None | Scenic riverside path |
-| 3 | Asti | Cloverdale | 12km | 32km | Mixed pavement | +75m | All services | Wine country finale |
+## 📍 DAILY ITINERARY
+[Daily breakdown with specific stops, accommodations, and activities]
 
-### Day 2: Cloverdale → Ukiah (45km)
-| Segment | From | To | Distance | Cumulative | Surface | Elevation | Services | Notes |
-|---------|------|----|---------:|----------:|---------|-----------|----------|-------|
-| 1 | Cloverdale Plaza | Hopland | 18km | 18km | Hwy 101 bike path | +150m | Water, Café | Hopland Brewery stop |
-| 2 | Hopland | Yorkville | 15km | 33km | Mountain road | +300m | Limited | Challenging climb |
-| 3 | Yorkville | Ukiah | 12km | 45km | Descending road | -200m | All services | Fast descent to city |
+## 🏕️ ACCOMMODATION DETAILS
+[Specific accommodation information and booking details]
 
-### Day 3: Ukiah → Willits (48km)
-| Segment | From | To | Distance | Cumulative | Surface | Elevation | Services | Notes |
-|---------|------|----|---------:|----------:|---------|-----------|----------|-------|
-| 1 | Ukiah downtown | Potter Valley Rd | 15km | 15km | Paved road | +200m | Water, Store | Rural farmland |
-| 2 | Potter Valley Rd | Calpella | 12km | 27km | Country roads | +100m | Limited | Quiet backroads |
-| 3 | Calpella | Willits | 21km | 48km | Forest road | +250m | All services | Redwood country |
+## 🍽️ FOOD & WATER STRATEGY
+[Resupply points and meal planning]
 
-### Day 4: Willits → Healdsburg (52km) 
-| Segment | From | To | Distance | Cumulative | Surface | Elevation | Services | Notes |
-|---------|------|----|---------:|----------:|---------|-----------|----------|-------|
-| 1 | Willits depot | Ukiah connection | 25km | 25km | Country roads | -150m | Limited | Reverse of Day 3 |
-| 2 | Ukiah bypass | Cloverdale | 15km | 40km | Back roads | -100m | Water, Food | Shortcut route |
-| 3 | Cloverdale | Healdsburg | 12km | 52km | Russian River Trail | -50m | All services | Final stretch home |
+## 🚴‍♂️ GEAR RECOMMENDATIONS
+[Bike setup and packing recommendations]
 
-## 🌤️ Daily Weather Forecast
-| Day | Location | Morning | Afternoon | Evening | Precipitation | Wind | Clothing Recommendation |
-|-----|----------|---------|-----------|---------|---------------|------|-------------------------|
-| 1 | Cloverdale | 8°C, Clear | 15°C, Sunny | 12°C, Clear | 0% | Light 5km/h | Layers, light jacket |
-| 2 | Ukiah | 6°C, Partly Cloudy | 12°C, Overcast | 9°C, Cloudy | 10% | Moderate 10km/h | Warm layers, wind jacket |
-| 3 | Willits | 4°C, Overcast | 10°C, Light Rain | 7°C, Drizzle | 60% | Light 8km/h | Rain gear, warm layers |
-| 4 | Healdsburg | 7°C, Clear | 14°C, Sunny | 11°C, Clear | 0% | Light 5km/h | Celebratory layers! |
+## 📱 EMERGENCY CONTACTS & SAFETY
+[Local emergency contacts and safety information]
 
-## 🏨 Accommodation Overview
-| Day | Primary Option | Backup Option 1 | Backup Option 2 | Price Range | Booking Info |
-|-----|----------------|-----------------|-----------------|-------------|--------------|
-| 1 | River Rock Casino Hotel | Best Western Plus | Cloverdale KOA | $89-129 | Phone: (707) 894-7735 |
-| 2 | Hampton Inn Ukiah | Fairfield Inn | Discovery Inn | $99-149 | Phone: (707) 462-6555 |
-| 3 | Baechtel Creek Inn | Willits KOA | Evergreen Lodge | $79-119 | Phone: (707) 459-9063 |
-```
-
-## 🌤️ **WEATHER FORECAST & CONDITIONS**
-
-Based on current forecasts for late December 2024, expect typical Northern California winter conditions with mild temperatures and occasional rain. The weather will be generally favorable for cycling with proper gear preparation.
-
-**Daily Weather Details:**
-
-**Day 1 (Dec 28) - Healdsburg to Cloverdale:**
-- Morning: Clear skies, 8°C, light frost possible on grass
-- Afternoon: Sunny conditions, reaching 15°C, perfect cycling weather  
-- Evening: Clear and cool, dropping to 12°C by arrival
-- Precipitation: 0% chance of rain
-- Wind: Light breeze from northwest at 5km/h
-- **Clothing Rec**: Start with warm layers, shed to t-shirt by afternoon, light jacket for evening
-
-**Day 2 (Dec 29) - Cloverdale to Ukiah:**
-- Morning: Partly cloudy, 6°C, may feel cooler on climbs
-- Afternoon: Overcast conditions, 12°C, comfortable for effort
-- Evening: Cloudy skies, 9°C, jacket needed
-- Precipitation: 10% chance of light sprinkles
-- Wind: Moderate from west at 10km/h, may affect climbs
-- **Clothing Rec**: Warm base layers, wind-resistant outer layer, pack light rain protection
-
-## 🏨 **ACCOMMODATION DETAILS**
-
-**Day 1: River Rock Casino Hotel, Cloverdale**
-- **Address**: 3250 Hwy 128, Geyserville, CA 95441
-- **Distance from route**: 2km detour (worth it for amenities)
-- **Current Rate**: $89-109/night (Dec 2024 rates)
-- **Amenities**: Pool, restaurant, casino, secure bike storage
-- **Booking**: (707) 857-2777 or online at riverrockcasino.com
-- **Bike Facilities**: Covered bike storage, wash station
-- **Food Options**: On-site restaurant, room service until 11pm
-
-**Backup Options Day 1:**
-- **Best Western Plus Wine Country Inn**: $99-129, downtown Cloverdale, (707) 894-9000
-- **Cloverdale KOA**: $45-55 for tent sites, $75-85 for cabins, (707) 894-3337
-
-## 📍 **DETAILED DAILY ITINERARIES**
-
-### **Day 1: Healdsburg → Cloverdale (32km, 2.5 hours cycling)**
-
-**Route Profile**: Easy rolling hills through wine country with one moderate climb
-**Surface**: 85% paved roads, 15% bike path
-**Elevation Gain**: 150m total
-
-**Detailed Waypoints:**
-
-**0km - Healdsburg Plaza (Start)**
-- Depart from town square, stock up at Oakville Grocery (opens 7am)
-- Public restrooms, water fountains, coffee at Flying Goat
-- Head north on Healdsburg Avenue toward Geyserville
-
-**12km - Geyserville (1st major waypoint)**
-- **Services**: Geyserville Market (groceries), Diavola Pizzeria (opens 11am)
-- **Attractions**: Historic tasting rooms, Geyserville Museum
-- **Route Notes**: Cross under Hwy 101, continue on Geyserville Ave
-- **Water**: Public park with fountains on Main Street
-
-**20km - Asti Winery Area**
-- **Route Notes**: Enter Russian River Trail system, gravel path alongside river
-- **Scenery**: Vineyards transition to riverside forest, very scenic
-- **Surface**: Well-maintained gravel, suitable for all tire types
-- **Wildlife**: Herons, hawks, possible river otters
-
-**32km - Cloverdale Arrival**
-- **Services**: Full town amenities, Safeway, restaurants, bike shop
-- **Evening Options**: Downtown restaurants, early dinner recommended
-- **Accommodation Check-in**: River Rock Casino 4pm, shuttles available from town
-```
-
-This example demonstrates the exact level of detail and formatting you should provide for your specific trip.
-
-SEARCH FOR CURRENT INFORMATION ABOUT:
-- WEATHER: Search for detailed weather forecasts for each planned location and travel dates{f" (starting {departure_date})" if departure_date else ""}
-- ACCOMMODATIONS: Find specific campgrounds, hotels, B&Bs, hostels with current availability, exact pricing, booking requirements, and contact information
-- Trail conditions, road closures, construction, or detours along the route
-- Local bike shops for repairs, rentals, and supplies with current hours and services
-- Food sources, restaurants, grocery stores with current hours and seasonal availability
-- Water sources and refill points along the route
-- Local events, festivals, or seasonal attractions during the planned travel period
-- Recent safety concerns, wildlife warnings, or route advisories
-- Park permits, fees, or reservations required for camping or attractions
-
-PLANNED ITINERARY:
-{json.dumps(itinerary, indent=2)}
-
-ACTUAL ROUTE INFORMATION:
-- Total distance: {total_distance:.1f} km
-- Estimated cycling time: {total_duration:.1f} hours
-- Route segments: {len(directions['legs'])} legs{departure_info}
-
-USER PREFERENCES:
-- Accommodation: {preferences.get('accommodation', 'mixed')}
-- Stealth camping allowed: {preferences.get('stealth_camping', False)}
+TRIP DETAILS:
+- Start: {start}
+- End: {end}
+- Duration: {nights} nights
+- Accommodation preference: {preferences.get('accommodation', 'mixed')}
 - Fitness level: {preferences.get('fitness_level', 'intermediate')}
-- Daily distance preference: {preferences.get('daily_distance', '50-80')} km
-- Terrain preference: {preferences.get('terrain', 'mixed')}
-- Tire size: {preferences.get('tire_size', '700x35c (Gravel - Standard)')}
+- Daily distance: {preferences.get('daily_distance', '50-80')} km
+- Terrain: {preferences.get('terrain', 'mixed')}
 - Budget: {preferences.get('budget', 'moderate')}
 - Interests: {', '.join(preferences.get('interests', []))}
+- Allow stealth camping: {preferences.get('stealth_camping', False)}
+- Tire size: {preferences.get('tire_size', '700x35c (Gravel - Standard)')}{departure_info}
 
-REQUIREMENTS FOR MAXIMUM DETAIL:
-1. Use the planned itinerary as your foundation
-2. PRIORITY: Search for and include current weather forecasts for each location and travel date
-3. PRIORITY: Search for specific accommodation options with current availability, exact pricing, and booking details
-4. MANDATORY: Include detailed waypoints every 15-20km along the route with specific landmarks, towns, services, and points of interest
-5. MANDATORY: Provide comprehensive descriptions of each waypoint including what makes it noteworthy, available services, and local attractions
-6. Enhance each day with detailed recommendations based on current web-searched information
-7. Include multiple accommodation options per location (primary + backup options)
-8. Add extensive points of interest, food stops, and resupply opportunities with current operating status and hours
-9. Include comprehensive packing suggestions based on current weather forecasts and seasonal conditions
-10. Provide detailed weather information: temperatures, precipitation, wind, and seasonal considerations
-11. Include emergency contacts and backup plans with up-to-date contact information
-12. Search for any current events, construction, or alerts that might affect the planned route
-13. MANDATORY: Write detailed descriptions for each section - aim for comprehensive, verbose explanations
-14. MANDATORY: Include surface type breakdowns for each day (km of paved vs gravel vs dirt)
-15. MANDATORY: Include elevation profiles, difficulty ratings, and technical challenges for each day
-16. MANDATORY: Provide detailed food and water planning with specific locations and distances
+ROUTE INFORMATION:
+{route_info}
 
-ROUTE SURFACE RECOMMENDATIONS:
-Based on tire size "{preferences.get('tire_size', '700x35c (Gravel - Standard)')}" and terrain preference "{preferences.get('terrain', 'mixed')}":
-- If tire size contains "23", "25", or "28mm": Recommend paved roads, smooth bike paths, and well-maintained gravel paths only
-- If tire size contains "32", "35", "40mm" or "650b": Can handle mixed surfaces - include paved roads, gravel paths, and light trails
-- If tire size contains "2.1", "2.25", "2.35", or "2.8": Suitable for mountain bike trails, singletrack, and rougher terrain
-- Include specific surface type warnings and recommendations for each route segment based on tire capabilities
+ITINERARY STOPS:
+{itinerary_text}
 
-FORMAT as extremely detailed markdown with EXTENSIVE SECTIONS:
-
-**FIRST: START WITH A COMPREHENSIVE TRIP SUMMARY TABLE**
-Create a detailed summary table at the very beginning with the following format:
-
-```
-# 🚴‍♂️ TRIP OVERVIEW & DAILY SUMMARY
-
-## 📊 Trip Summary Table
-
-| Day | Date | Start Location | End Location | Overnight | Daily Distance | Cumulative | Weather | Highlights |
-|-----|------|----------------|--------------|-----------|----------------|------------|---------|------------|
-| 1 | [Date] | [Start] | [Town/City] | [Accommodation Name] | XXkm | XXkm | ☀️ 22°C, Clear | Scenic valley, Historic site |
-| 2 | [Date] | [Previous End] | [Next Town] | [Accommodation Name] | XXkm | XXXkm | ⛅ 18°C, Partly Cloudy | Mountain views, Local market |
-| ... | ... | ... | ... | ... | ... | ... | ... | ... |
-
-## 🗺️ Detailed Waypoints & Segments
-
-### Day 1: [Start] → [End] (XXkm)
-| Segment | From | To | Distance | Cumulative | Surface | Elevation | Services | Notes |
-|---------|------|----|---------:|----------:|---------|-----------|----------|-------|
-| 1 | [Start] | [Waypoint 1] | 15km | 15km | Paved road | +150m | Water, Food | Historic downtown area |
-| 2 | [Waypoint 1] | [Waypoint 2] | 20km | 35km | Gravel path | +250m | Restrooms | Scenic riverside trail |
-| 3 | [Waypoint 2] | [End Location] | 25km | 60km | Mixed terrain | +100m | Accommodation, Food | Arrival at overnight stop |
-
-### Day 2: [Previous End] → [Next End] (XXkm)
-| Segment | From | To | Distance | Cumulative | Surface | Elevation | Services | Notes |
-|---------|------|----|---------:|----------:|---------|-----------|----------|-------|
-| ... | ... | ... | ... | ... | ... | ... | ... | ... |
-
-## 🌤️ Daily Weather Forecast
-| Day | Location | Morning | Afternoon | Evening | Precipitation | Wind | Clothing Recommendation |
-|-----|----------|---------|-----------|---------|---------------|------|-------------------------|
-| 1 | [Location] | 15°C, Clear | 22°C, Sunny | 18°C, Clear | 0% | Light 5km/h | Layers, light jacket |
-| 2 | [Location] | 12°C, Cloudy | 18°C, Overcast | 14°C, Light rain | 30% | Moderate 15km/h | Rain gear, warm layers |
-| ... | ... | ... | ... | ... | ... | ... | ... |
-
-## 🏨 Accommodation Overview
-| Day | Primary Option | Backup Option 1 | Backup Option 2 | Price Range | Booking Info |
-|-----|----------------|-----------------|-----------------|-------------|--------------|
-| 1 | [Hotel/Campground Name] | [Alternative 1] | [Alternative 2] | $XX-XX | Phone: XXX, Website: XXX |
-| 2 | [Hotel/Campground Name] | [Alternative 1] | [Alternative 2] | $XX-XX | Phone: XXX, Website: XXX |
-| ... | ... | ... | ... | ... | ... |
-```
-
-**THEN CONTINUE WITH ALL THE DETAILED SECTIONS:**
-- **WEATHER SECTION**: Comprehensive current forecasts for each location and travel day with hourly breakdowns, seasonal considerations, and clothing recommendations
-- **ACCOMMODATION SECTION**: Extensive lodging options with current availability, exact pricing, full contact information, amenities, and detailed booking instructions
-- **DETAILED WAYPOINT ANALYSIS**: For each day, include waypoints every 15-20km with comprehensive descriptions, services, attractions, and recommendations
-- **ROUTE SURFACE ANALYSIS**: Detailed breakdown of surface types, technical challenges, and tire suitability for each segment
-- **ELEVATION AND DIFFICULTY PROFILES**: Comprehensive analysis of climbs, descents, and technical challenges for each day
-- Trip overview matching the planned route with current conditions and extensive background information
-- **COMPREHENSIVE DAILY ITINERARIES**: Include actual distances, elevation profiles, multiple accommodation options, extensive highlights, detailed waypoint descriptions, food planning, water sources, and resupply opportunities
-- Multiple accommodation options per location (primary + 2-3 backup choices with full details)
-- **EXTENSIVE WAYPOINT RECOMMENDATIONS**: Detailed descriptions of each planned waypoint with current web-searched information, historical context, and practical tips
-- **COMPREHENSIVE PACKING LIST**: Detailed packing recommendations adapted to current weather forecasts, terrain, and conditions
-- **DETAILED SAFETY SECTION**: Emergency information with current contacts, evacuation routes, medical facilities, and risk assessments
-- **DETAILED BUDGET ANALYSIS**: Comprehensive budget estimates with current, researched pricing for all aspects of the trip
-- **EXTENSIVE TIPS AND CONSIDERATIONS**: Detailed additional information based on recent web-searched information, local customs, and practical advice
-
-CRITICAL: Write at least 3000+ words with extensive detail, comprehensive waypoint coverage, and thorough explanations for each section. Make this the most comprehensive, actionable plan possible that follows the planned itinerary and incorporates extensive current, web-searched information.
-
-IMPORTANT: Follow the EXACT format structure shown in the example above, including:
-1. Trip Overview & Daily Summary table with all columns
-2. Detailed Waypoints & Segments tables for each day
-3. Daily Weather Forecast table with hourly details
-4. Accommodation Overview table with multiple options
-5. Detailed weather section with daily breakdowns
-6. Comprehensive accommodation details with specific information
-7. Detailed daily itineraries with extensive waypoint descriptions
-
-Match the level of detail, formatting, and comprehensive information shown in the example for your specific trip route and destinations.
-"""
+Please create a comprehensive trip plan following the example format above. Include practical details like specific accommodation options, food stops, water sources, and safety considerations. Make it engaging and informative."""
 
     try:
+        # Make API call to OpenAI
         response = openai_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4",
             messages=[
-                {"role": "system",
-                    "content": "You are an expert bikepacking guide with extensive knowledge of routes, gear, safety, and local attractions worldwide. You have access to current web information and should search for up-to-date details about: 1) WEATHER - Get detailed forecasts for all locations and travel dates, 2) ACCOMMODATIONS - Find specific places to stay with current availability, pricing, and booking information, 3) Trail conditions, closures, and safety alerts, 4) Local services (bike shops, restaurants, stores) with current hours and status. CRITICAL: You must provide EXTREMELY detailed, comprehensive, and verbose responses following the EXACT format shown in the example. MANDATORY: Start with comprehensive summary tables showing daily overview, detailed waypoint segments, weather forecasts, and accommodation options in nicely formatted markdown tables exactly as demonstrated. Include extensive waypoint information, detailed descriptions, and thorough explanations matching the example format. Always provide current, accurate, searchable information in your recommendations. Write at least 3000+ words with extensive detail for each section, following the structure provided in the example."},
+                {"role": "system", "content": "You are an expert bikepacking trip planner with extensive knowledge of cycling routes, accommodations, and outdoor safety."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
             temperature=0.7
         )
 
-        return response.choices[0].message.content or "Error: Empty response from OpenAI"
-    except Exception as e:
-        print(f"Error generating trip plan: {e}")
-        return generate_trip_plan_fallback(start, end, nights, preferences, itinerary, directions, departure_date)
-
-
-def generate_trip_plan_fallback(start: str, end: str, nights: int, preferences: Dict[str, str],
-                                itinerary: Dict[str, Any], directions: Dict[str, Any], departure_date: Optional[str] = None) -> str:
-    """
-    Fallback trip plan generation without function calling.
-    """
-    if not openai_client:
-        raise ValueError("OpenAI client not initialized. Please set OPENAI_API_KEY.")
-
-    # Extract route information
-    total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000  # Convert to km
-    total_duration = sum(leg['duration']['value'] for leg in directions['legs']) / 3600  # Convert to hours
-
-    # Create a simple trip plan based on the itinerary
-    daily_plans = itinerary.get('itinerary', {})
-    departure_info = f"\n- **Departure Date**: {departure_date}" if departure_date else ""
-
-    trip_plan = f"""# DirtGenie Trip: {start} to {end}
-
-## Trip Overview
-- **Duration**: {nights} nights ({nights + 1} days)
-- **Total Distance**: {total_distance:.1f} km
-- **Estimated Cycling Time**: {total_duration:.1f} hours{departure_info}
-- **Accommodation Style**: {preferences.get('accommodation', 'mixed')}
-- **Fitness Level**: {preferences.get('fitness_level', 'intermediate')}
-
-## Daily Itinerary
-"""
-
-    for day_key in sorted(daily_plans.keys()):
-        day_plan = daily_plans[day_key]
-        day_num = day_key.split('_')[1]
-
-        # Handle both string and dict formats for overnight_location
-        overnight_location = day_plan.get('overnight_location', 'TBD')
-        if isinstance(overnight_location, dict):
-            overnight_location_str = overnight_location.get('name', str(overnight_location))
+        trip_plan = response.choices[0].message.content
+        if trip_plan:
+            trip_plan = trip_plan.strip()
         else:
-            overnight_location_str = str(overnight_location)
+            trip_plan = "Error: Empty response from OpenAI"
+        print(f"\n✅ Generated trip plan with {len(trip_plan)} characters")
+        return trip_plan
 
-        trip_plan += f"""
-### Day {day_num}: {day_plan['start_location']} to {day_plan['end_location']}
-- **Distance**: {day_plan.get('estimated_distance_km', 'TBD')} km
-- **Accommodation**: {overnight_location_str}
-- **Highlights**: {', '.join(day_plan.get('highlights', []))}
-"""
-
-    trip_plan += f"""
-## Packing List
-- Tent and sleeping gear
-- Bike repair tools and spare tubes
-- Weather-appropriate clothing
-- First aid kit
-- Navigation tools (GPS device or smartphone)
-- Water bottles and purification tablets
-- Cooking gear and food
-
-## Safety Information
-- Emergency contacts: 911 (US/Canada)
-- Check weather conditions before departure
-- Inform someone of your planned route
-- Carry identification and emergency information
-
-## Budget Estimate
-- **{preferences.get('budget', 'moderate')} budget**: Estimated $50-150 per day
-- Includes meals, accommodation, and incidentals
-
-Generated with fallback method on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-"""
-
-    return trip_plan
-
-
-def extract_overnight_locations(trip_plan: str, itinerary: Optional[Dict[str, Any]] = None) -> List[str]:
-    """
-    Extract overnight accommodation locations from the trip plan text or structured itinerary.
-
-    Args:
-        trip_plan: The generated trip plan as markdown text
-        itinerary: Optional structured itinerary data
-
-    Returns:
-        List of location names where overnight stays are planned
-    """
-    overnight_locations = []
-
-    # If we have structured itinerary data, use that first (more reliable)
-    if itinerary and 'itinerary' in itinerary:
-        daily_plans = itinerary['itinerary']
-        for day_key in sorted(daily_plans.keys()):
-            day_plan = daily_plans[day_key]
-            overnight_location = day_plan.get('overnight_location', '')
-
-            # Handle both string and dict formats for overnight_location
-            if isinstance(overnight_location, dict):
-                overnight_location_str = overnight_location.get('name', str(overnight_location))
-            else:
-                overnight_location_str = str(overnight_location)
-
-            if overnight_location_str and overnight_location_str != "Arrive at destination":
-                overnight_locations.append(overnight_location_str)
-        return overnight_locations
-
-    # Fallback to text parsing if no structured itinerary
-    import re
-
-    # Look for accommodation patterns in the trip plan
-    accommodation_patterns = [
-        r'\*\*Accommodation\*\*:\s*([^*\n]+)',  # **Accommodation**: Location
-        r'Accommodation:\s*([^*\n]+)',          # Accommodation: Location
-        r'camping\s+(?:near|at)\s+([^,.\n]+)',  # camping near/at Location
-        r'staying\s+(?:at|in)\s+([^,.\n]+)',    # staying at/in Location
-        r'camp\s+(?:at|near)\s+([^,.\n]+)',     # camp at/near Location
-        r'stealth\s+camping\s+(?:near|at)\s+([^,.\n]+)',  # stealth camping near/at Location
-    ]
-
-    for pattern in accommodation_patterns:
-        matches = re.finditer(pattern, trip_plan, re.IGNORECASE)
-        for match in matches:
-            location = match.group(1).strip()
-            # Clean up the location string
-            location = re.sub(r'\([^)]*\)', '', location)  # Remove parentheses content
-            location = location.replace('**', '').strip()   # Remove markdown bold
-            if location and location not in overnight_locations:
-                overnight_locations.append(location)
-
-    return overnight_locations
-
-
-def create_geojson(start: str, end: str, directions: Dict[str, Any],
-                   preferences: Dict[str, str], trip_plan: str = "",
-                   itinerary: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """
-    Create a GeoJSON file with detailed route information.
-
-    Args:
-        start: Starting location
-        end: Ending location
-        directions: Google Maps directions data
-        preferences: User preferences
-        trip_plan: Generated trip plan text (optional)
-        itinerary: Planned itinerary with structured waypoint data (optional)
-
-    Returns:
-        GeoJSON data structure
-    """
-
-    # Extract route coordinates
-    coordinates = extract_route_points(directions)
-
-    # Calculate total distance and duration
-    total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000
-    total_duration = sum(leg['duration']['value'] for leg in directions['legs']) / 3600
-
-    # Create GeoJSON structure
-    geojson = {
-        "type": "FeatureCollection",
-        "features": [
-            {
-                "type": "Feature",
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": coordinates
-                },
-                "properties": {
-                    "trip_type": "bikepacking",
-                    "start_location": start,
-                    "end_location": end,
-                    "total_distance_km": round(total_distance, 2),
-                    "estimated_cycling_hours": round(total_duration, 2),
-                    "user_preferences": preferences,
-                    "generated_date": datetime.now().isoformat(),
-                    "route_summary": directions.get('summary', 'Generated route'),
-                    "warnings": [warning.get('text', warning) if isinstance(warning, dict) else str(warning)
-                                 for warning in directions.get('warnings', [])],
-                    "copyrights": directions.get('copyrights', '')
-                }
-            }
-        ]
-    }
-
-    # Add waypoints as separate features
-    for i, leg in enumerate(directions['legs']):
-        # Start point
-        start_point = {
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    leg['start_location']['lng'],
-                    leg['start_location']['lat']
-                ]
-            },
-            "properties": {
-                "type": "waypoint",
-                "leg_number": i + 1,
-                "address": leg['start_address'],
-                "distance_km": round(leg['distance']['value'] / 1000, 2),
-                "duration_hours": round(leg['duration']['value'] / 3600, 2)
-            }
-        }
-        geojson["features"].append(start_point)
-
-    # Add final destination
-    if directions['legs']:
-        last_leg = directions['legs'][-1]
-        end_point = {
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    last_leg['end_location']['lng'],
-                    last_leg['end_location']['lat']
-                ]
-            },
-            "properties": {
-                "type": "destination",
-                "address": last_leg['end_address']
-            }
-        }
-        geojson["features"].append(end_point)
-
-    # Add overnight accommodation markers if trip plan is provided
-    if trip_plan:
-        overnight_locations = extract_overnight_locations(trip_plan, itinerary)
-
-        # Try to get more precise locations from itinerary structure first
-        if itinerary and 'itinerary' in itinerary:
-            daily_plans = itinerary['itinerary']
-            legs_per_day = {}
-
-            # Map days to legs based on the multi-waypoint structure
-            leg_index = 0
-            for day_key in sorted(daily_plans.keys()):
-                if leg_index < len(directions['legs']):
-                    legs_per_day[day_key] = leg_index
-                    leg_index += 1
-
-            # Add overnight markers at the end of each day's route
-            for day_key in sorted(daily_plans.keys()):
-                day_plan = daily_plans[day_key]
-                overnight_location = day_plan.get('overnight_location', '')
-
-                # Skip if this is the final day (arrival at destination)
-                # Handle both string and dict formats for overnight_location
-                if isinstance(overnight_location, dict):
-                    overnight_location_str = overnight_location.get('name', str(overnight_location))
-                else:
-                    overnight_location_str = str(overnight_location)
-
-                if 'arrive at destination' in overnight_location_str.lower() or day_key == max(daily_plans.keys()):
-                    continue
-
-                # Get the leg for this day
-                if day_key in legs_per_day:
-                    leg_idx = legs_per_day[day_key]
-                    if leg_idx < len(directions['legs']):
-                        leg = directions['legs'][leg_idx]
-
-                        # Use the end point of this leg as the overnight location
-                        overnight_marker = {
-                            "type": "Feature",
-                            "geometry": {
-                                "type": "Point",
-                                "coordinates": [
-                                    leg['end_location']['lng'],
-                                    leg['end_location']['lat']
-                                ]
-                            },
-                            "properties": {
-                                "type": "overnight_accommodation",
-                                "day": day_key,
-                                "location_name": overnight_location_str,
-                                "address": leg['end_address'],
-                                "precise_location": True,
-                                "marker_symbol": "campground",
-                                "marker_color": "#FF6B35",
-                                "description": f"{day_key.replace('_', ' ').title()} accommodation: {overnight_location_str}",
-                                "highlights": day_plan.get('highlights', []),
-                                "estimated_distance_km": day_plan.get('estimated_distance_km', 0)
-                            }
-                        }
-                        geojson["features"].append(overnight_marker)
-
-        # Fallback to distance-based estimation if no structured itinerary
-        elif overnight_locations:
-            route_coordinates = []
-            for leg in directions['legs']:
-                for step in leg['steps']:
-                    if 'polyline' in step and 'points' in step['polyline']:
-                        try:
-                            decoded_points = polyline.decode(step['polyline']['points'])
-                            route_coordinates.extend(decoded_points)
-                        except Exception:
-                            continue
-
-            if route_coordinates:
-                for i, location in enumerate(overnight_locations):
-                    # Estimate position along route (distribute evenly by distance)
-                    position_ratio = (i + 1) / (len(overnight_locations) + 1)
-                    coord_index = int(position_ratio * len(route_coordinates))
-
-                    if coord_index < len(route_coordinates):
-                        lat, lng = route_coordinates[coord_index]
-
-                        overnight_marker = {
-                            "type": "Feature",
-                            "geometry": {
-                                "type": "Point",
-                                "coordinates": [lng, lat]
-                            },
-                            "properties": {
-                                "type": "overnight_accommodation",
-                                "night_number": i + 1,
-                                "location_name": location,
-                                "estimated_location": True,
-                                "marker_symbol": "campground",
-                                "marker_color": "#FF6B35",
-                                "description": f"Night {i + 1} accommodation: {location}"
-                            }
-                        }
-                        geojson["features"].append(overnight_marker)
-
-    return geojson
-
-
-def save_outputs(trip_plan: str, geojson_data: Dict[str, Any], start: str, end: str) -> Tuple[str, str]:
-    """
-    Save the trip plan and GeoJSON to files.
-
-    Args:
-        trip_plan: Markdown trip plan content
-        geojson_data: GeoJSON data structure
-        start: Starting location (for filename)
-        end: Ending location (for filename)
-
-    Returns:
-        Tuple of (markdown_filename, geojson_filename)
-    """
-
-    # Create safe filenames
-    safe_start = "".join(c for c in start if c.isalnum() or c in (' ', '-', '_')).rstrip()
-    safe_end = "".join(c for c in end if c.isalnum() or c in (' ', '-', '_')).rstrip()
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    # Save markdown file
-    md_filename = f"dirtgenie_trip_{safe_start}_to_{safe_end}_{timestamp}.md"
-    with open(md_filename, 'w', encoding='utf-8') as f:
-        f.write(trip_plan)
-
-    # Save GeoJSON file
-    geojson_filename = f"dirtgenie_route_{safe_start}_to_{safe_end}_{timestamp}.geojson"
-    with open(geojson_filename, 'w', encoding='utf-8') as f:
-        json.dump(geojson_data, f, indent=2, ensure_ascii=False)
-
-    return md_filename, geojson_filename
-
-
-# OpenAI tools definitions for intelligent route planning
-OPENAI_TOOLS = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_bicycle_route",
-            "description": "Get bicycle directions between two locations using Google Maps",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "start": {
-                        "type": "string",
-                        "description": "Starting location (city, address, or landmark)"
-                    },
-                    "end": {
-                        "type": "string",
-                        "description": "Ending location (city, address, or landmark)"
-                    },
-                    "waypoints": {
-                        "type": "array",
-                        "items": {"type": "string"},
-                        "description": "Optional intermediate stops along the route"
-                    }
-                },
-                "required": ["start", "end"]
-            }
-        }
-    }
-]
-
-
-def openai_function_get_bicycle_route(start: str, end: str, waypoints: Optional[List[str]] = None) -> str:
-    """
-    OpenAI function to get bicycle route information.
-
-    Returns:
-        JSON string with route information
-    """
-    try:
-        directions = get_bicycle_directions(start, end, waypoints)
-        if not directions or 'legs' not in directions:
-            return json.dumps({"error": "No route found"})
-
-        total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000
-        total_duration = sum(leg['duration']['value'] for leg in directions['legs']) / 3600
-
-        route_info = {
-            "total_distance_km": round(total_distance, 2),
-            "estimated_hours": round(total_duration, 2),
-            "legs": len(directions['legs']),
-            "summary": directions.get('summary', 'Route found'),
-            "warnings": [w.get('text', '') for w in directions.get('warnings', [])]
-        }
-
-        return json.dumps(route_info)
     except Exception as e:
-        return json.dumps({"error": str(e)})
+        error_msg = f"❌ Error generating trip plan: {e}"
+        print(error_msg)
+        return f"Error generating trip plan: {e}"
 
 
-def revise_trip_plan_with_feedback(original_plan: str, feedback: str, start: str, end: str,
-                                   nights: int, preferences: Dict[str, str],
-                                   itinerary: Dict[str, Any], directions: Dict[str, Any], departure_date: Optional[str] = None) -> str:
+def revise_trip_plan_with_feedback(original_plan: str, feedback: str, start: str, end: str, nights: int,
+                                   preferences: Dict[str, Any], itinerary: Dict[str, Any],
+                                   directions: Dict[str, Any], departure_date: Optional[str] = None) -> str:
     """
-    Revise a trip plan based on user feedback.
-
-    Args:
-        original_plan: The original trip plan markdown
-        feedback: User feedback about what to change
-        start: Starting location
-        end: Ending location
-        nights: Number of nights
-        preferences: User preferences
-        itinerary: Planned itinerary with waypoints
-        directions: Google Maps directions data
-        departure_date: Optional departure date (format: YYYY-MM-DD)
-
-    Returns:
-        Revised trip plan as markdown string
+    Revise an existing trip plan based on user feedback.
     """
     if not openai_client:
-        raise ValueError("OpenAI client not initialized. Please set OPENAI_API_KEY.")
+        return "Error: OpenAI client not initialized"
 
-    # Extract route information
-    total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000
-    total_duration = sum(leg['duration']['value'] for leg in directions['legs']) / 3600
+    # Format the route information
+    route_info = format_route_info(directions)
+    itinerary_text = format_itinerary_for_prompt(itinerary)
+
+    departure_info = f"\n- Departure date: {departure_date}" if departure_date else ""
 
     prompt = f"""
-You are an expert bikepacking trip planner with access to current web information. A user has reviewed their trip plan and provided feedback. Please revise the plan based on their specific feedback while maintaining the overall route structure.
+You are revising a bikepacking trip plan based on user feedback. Here is the original plan and the user's feedback:
 
-ORIGINAL TRIP PLAN:
+ORIGINAL PLAN:
 {original_plan}
 
 USER FEEDBACK:
 {feedback}
 
-ROUTE INFORMATION:
+TRIP DETAILS:
 - Start: {start}
 - End: {end}
 - Duration: {nights} nights
-- Total distance: {total_distance:.1f} km
-- Estimated cycling time: {total_duration:.1f} hours
-- Departure date: {departure_date if departure_date else "Not specified"}
-
-PLANNED ITINERARY:
-{json.dumps(itinerary, indent=2)}
-
-USER PREFERENCES:
-- Accommodation: {preferences.get('accommodation', 'mixed')}
-- Stealth camping allowed: {preferences.get('stealth_camping', False)}
+- Accommodation preference: {preferences.get('accommodation', 'mixed')}
 - Fitness level: {preferences.get('fitness_level', 'intermediate')}
-- Daily distance preference: {preferences.get('daily_distance', '50-80')} km
-- Terrain preference: {preferences.get('terrain', 'mixed')}
-- Tire size: {preferences.get('tire_size', '700x35c (Gravel - Standard)')}
+- Daily distance: {preferences.get('daily_distance', '50-80')} km
+- Terrain: {preferences.get('terrain', 'mixed')}
 - Budget: {preferences.get('budget', 'moderate')}
 - Interests: {', '.join(preferences.get('interests', []))}
+- Allow stealth camping: {preferences.get('stealth_camping', False)}
+- Tire size: {preferences.get('tire_size', '700x35c (Gravel - Standard)')}{departure_info}
 
-INSTRUCTIONS:
-1. Carefully read and understand the user's feedback
-2. Address their specific concerns or requests
-3. If they want changes to accommodations, search for specific alternatives with current availability and pricing
-4. If they want route modifications, suggest realistic alternatives within the existing framework
-5. If they want different activities or points of interest, search for current options
-6. Maintain the overall structure and quality of the trip plan
-7. Use web search to find current, up-to-date information for any new recommendations
-8. Keep the same markdown format and level of detail
-9. Clearly indicate what changes were made in response to their feedback
+ROUTE INFORMATION:
+{route_info}
 
-ROUTE SURFACE CONSIDERATIONS:
-When making route revisions, consider tire size "{preferences.get('tire_size', '700x35c (Gravel - Standard)')}" and terrain preference "{preferences.get('terrain', 'mixed')}":
-- If tire size contains "23", "25", or "28mm": Prioritize paved roads and smooth surfaces
-- If tire size contains "32", "35", "40mm" or "650b": Can handle mixed terrain including gravel paths
-- If tire size contains "2.1", "2.25", "2.35", or "2.8": Suitable for mountain bike trails and rough terrain
-- Ensure any route modifications match the user's tire capabilities for safety and comfort
+ITINERARY STOPS:
+{itinerary_text}
 
-Make the revisions thoughtfully and provide a comprehensive updated plan that addresses their feedback while maintaining trip quality and feasibility.
-"""
+Please revise the trip plan based on the user's feedback while maintaining the same format and structure. Address their specific concerns and incorporate their suggestions where possible."""
 
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an expert bikepacking guide with access to current web information. You excel at incorporating user feedback to improve trip plans while maintaining quality and feasibility. Always search for current information when making changes to accommodations, routes, or activities."},
+                {"role": "system", "content": "You are an expert bikepacking trip planner. Revise the existing plan based on the user's feedback while maintaining high quality and practical advice."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=4000,
             temperature=0.7
         )
 
-        return response.choices[0].message.content or "Error: Empty response from OpenAI"
+        revised_plan = response.choices[0].message.content
+        if revised_plan:
+            revised_plan = revised_plan.strip()
+        else:
+            revised_plan = "Error: Empty response from OpenAI"
+        print(f"\n✅ Revised trip plan with {len(revised_plan)} characters")
+        return revised_plan
+
     except Exception as e:
-        print(f"Error revising trip plan: {e}")
-        return f"Error revising trip plan: {str(e)}. Please try again with different feedback."
+        error_msg = f"❌ Error revising trip plan: {e}"
+        print(error_msg)
+        return f"Error revising trip plan: {e}"
 
 
 def main():
-    """
-    Main function to run the DirtGenie trip planner.
-    """
-    # Initialize API clients first
-    try:
-        initialize_clients()
-    except ValueError as e:
-        print(f"❌ {e}")
-        print("Please set up your API keys and try again.")
-        return
-
-    parser = argparse.ArgumentParser(description="DirtGenie - AI-Powered Trip Planner")
-    parser.add_argument("--start", required=True, help="Starting location")
-    parser.add_argument("--end", required=True, help="Ending location")
-    parser.add_argument("--nights", type=int, required=True, help="Number of nights for the trip")
-    parser.add_argument("--departure-date", help="Departure date (YYYY-MM-DD format) for weather and seasonal planning")
-    parser.add_argument("-i", "--interactive", action="store_true",
-                        help="Enable interactive mode to ask preference questions")
-    parser.add_argument("--desires", nargs='*', help="List of desires for the trip (e.g., scenic views, local food)")
-
-    parser.add_argument("-p", "--profile", default="profile.yml",
-                        help="Path to YAML profile file with preferences (default: profile.yml)")
+    """Main function to run the trip planner."""
+    parser = argparse.ArgumentParser(description="DirtGenie - AI-Powered Bikepacking Trip Planner")
+    parser.add_argument("start", help="Starting location")
+    parser.add_argument("end", help="Ending location")
+    parser.add_argument("nights", type=int, help="Number of nights")
+    parser.add_argument("--departure-date", help="Departure date (YYYY-MM-DD)")
+    parser.add_argument("--profile", help="Profile file to load preferences from")
+    parser.add_argument("--output-dir", default="trips", help="Output directory for trip files")
 
     args = parser.parse_args()
 
-    print("🚴‍♀️ Bikepacking Trip Planner")
-    print("=" * 50)
-    print(f"Planning a {args.nights}-night trip from {args.start} to {args.end}")
+    # Initialize clients
+    initialize_clients()
 
-    # Get user preferences (either interactive or from profile)
-    preferences = get_user_preferences(interactive=args.interactive, profile_path=args.profile)
+    # Load profile if specified
+    preferences = {}
+    if args.profile:
+        try:
+            profile_data = load_profile(args.profile)
+            preferences = profile_data
+            print(f"✅ Loaded profile from {args.profile}")
+        except Exception as e:
+            print(f"⚠️  Could not load profile {args.profile}: {e}")
+            preferences = create_default_profile()
+    else:
+        preferences = create_default_profile()
 
-    if args.desires:
-        print(f"\n🌟 Desires for the trip: {', '.join(args.desires)}")
+    print(f"\n🗺️  Planning trip from {args.start} to {args.end} for {args.nights} nights...")
 
-    print(f"\n🧠 Planning your tour itinerary (determining waypoints and overnight stops)...")
+    try:
+        # Step 1: Plan the itinerary
+        print("\n📍 Planning itinerary...")
+        itinerary = plan_tour_itinerary(
+            start=args.start,
+            end=args.end,
+            nights=args.nights,
+            preferences=preferences,
+            desires=[],
+            departure_date=args.departure_date
+        )
 
-    # Step 1: Plan the tour itinerary first
-    itinerary = plan_tour_itinerary(args.start, args.end, args.nights, preferences, args.desires or [], args.departure_date)
+        # Step 2: Get route directions
+        print("\n🛣️  Getting route directions...")
+        directions = get_multi_waypoint_directions(itinerary)
 
-    print(f"✅ Itinerary planned with {len(itinerary.get('itinerary', {}))} days")
+        if not directions or 'legs' not in directions:
+            print("❌ Could not find a route between the specified locations")
+            return
 
-    print(f"\n🗺️  Getting bicycle route information for your planned tour...")
+        # Step 3: Generate detailed trip plan
+        print("\n📝 Generating detailed trip plan...")
+        trip_plan = generate_trip_plan(
+            start=args.start,
+            end=args.end,
+            nights=args.nights,
+            preferences=preferences,
+            itinerary=itinerary,
+            directions=directions,
+            departure_date=args.departure_date,
+            desires=[]
+        )
 
-    # Step 2: Get multi-waypoint directions for the planned itinerary
-    directions = get_multi_waypoint_directions(itinerary)
-    if not directions or 'legs' not in directions:
-        print("❌ Could not get route information. Please check your locations and try again.")
-        return
+        # Step 4: Create GeoJSON
+        print("\n🗺️  Creating route map...")
+        geojson_data = create_geojson(
+            start=args.start,
+            end=args.end,
+            directions=directions,
+            preferences=preferences,
+            trip_plan=trip_plan,
+            itinerary=itinerary
+        )
 
-    total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000
-    print(f"✅ Route found: {total_distance:.1f} km total distance")
+        # Step 5: Save output files
+        output_dir = Path(args.output_dir)
+        trip_name = f"{args.start.lower().replace(' ', '-').replace(',', '')}-to-{args.end.lower().replace(' ', '-').replace(',', '')}"
+        trip_dir = output_dir / trip_name
 
-    print(f"\n🤖 Generating your detailed trip plan with OpenAI...")
+        # Create output directory
+        trip_dir.mkdir(parents=True, exist_ok=True)
 
-    # Step 3: Generate detailed trip plan based on the itinerary and route
-    trip_plan = generate_trip_plan(args.start, args.end, args.nights, preferences,
-                                   itinerary, directions, args.departure_date)
+        # Save trip plan
+        plan_file = trip_dir / "report.md"
+        with open(plan_file, 'w', encoding='utf-8') as f:
+            f.write(trip_plan)
 
-    print(f"\n📍 Creating detailed route GeoJSON...")
+        # Save GeoJSON
+        geojson_file = trip_dir / "route.geojson"
+        with open(geojson_file, 'w', encoding='utf-8') as f:
+            json.dump(geojson_data, f, indent=2)
 
-    # Create GeoJSON
-    geojson_data = create_geojson(args.start, args.end, directions, preferences, trip_plan, itinerary)
+        # Save profile used
+        profile_file = trip_dir / "profile.yml"
+        with open(profile_file, 'w', encoding='utf-8') as f:
+            yaml.dump(preferences, f, default_flow_style=False)
 
-    print(f"\n💾 Saving files...")
+        print(f"\n✅ Trip plan completed!")
+        print(f"📁 Files saved to: {trip_dir}")
+        print(f"📄 Trip plan: {plan_file}")
+        print(f"🗺️  Route map: {geojson_file}")
+        print(f"⚙️  Profile: {profile_file}")
 
-    # Save outputs
-    md_file, geojson_file = save_outputs(trip_plan, geojson_data, args.start, args.end)
+        # Calculate and display total distance
+        total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000
+        print(f"🚴‍♂️ Total distance: {total_distance:.1f} km")
 
-    print(f"\n🎉 Trip planning complete!")
-    print(f"📄 Trip plan saved to: {md_file}")
-    print(f"🗺️  Route data saved to: {geojson_file}")
-    print(f"\nHappy bikepacking! 🚴‍♀️🏕️")
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        raise
 
 
 if __name__ == "__main__":
     main()
+
+
+def format_route_info(directions: Dict[str, Any]) -> str:
+    """
+    Format route information from Google Maps directions for AI prompt.
+
+    Args:
+        directions: Google Maps directions result
+
+    Returns:
+        Formatted string with route details
+    """
+    if not directions or 'legs' not in directions:
+        return "Route information not available"
+
+    route_info = []
+    total_distance = 0
+    total_duration = 0
+
+    for i, leg in enumerate(directions['legs'], 1):
+        distance_km = leg['distance']['value'] / 1000
+        duration_hours = leg['duration']['value'] / 3600
+
+        total_distance += distance_km
+        total_duration += duration_hours
+
+        route_info.append(f"Leg {i}: {leg['start_address']} to {leg['end_address']}")
+        route_info.append(f"  Distance: {distance_km:.1f} km")
+        route_info.append(f"  Duration: {duration_hours:.1f} hours")
+        route_info.append("")
+
+    route_info.append(f"Total Distance: {total_distance:.1f} km")
+    route_info.append(f"Total Duration: {total_duration:.1f} hours")
+
+    return "\n".join(route_info)
+
+
+def format_itinerary_for_prompt(itinerary: Dict[str, Any]) -> str:
+    """
+    Format itinerary information for AI prompt.
+
+    Args:
+        itinerary: Planned itinerary data
+
+    Returns:
+        Formatted string with itinerary details
+    """
+    if 'itinerary' not in itinerary:
+        return "Itinerary information not available"
+
+    itinerary_info = []
+    daily_plans = itinerary['itinerary']
+
+    for day_key in sorted(daily_plans.keys()):
+        day_plan = daily_plans[day_key]
+        day_num = day_key.replace('day_', '')
+
+        itinerary_info.append(f"Day {day_num}:")
+        itinerary_info.append(f"  Start: {day_plan.get('start_location', 'Unknown')}")
+        itinerary_info.append(f"  End: {day_plan.get('end_location', 'Unknown')}")
+        itinerary_info.append(f"  Overnight: {day_plan.get('overnight_location', 'Unknown')}")
+
+        if 'highlights' in day_plan:
+            itinerary_info.append(f"  Highlights: {', '.join(day_plan['highlights'])}")
+
+        if 'estimated_distance_km' in day_plan:
+            itinerary_info.append(f"  Distance: {day_plan['estimated_distance_km']} km")
+
+        itinerary_info.append("")
+
+    return "\n".join(itinerary_info)
+
+
+def create_geojson(start: str, end: str, directions: Dict[str, Any],
+                   preferences: Dict[str, Any], trip_plan: str,
+                   itinerary: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Create GeoJSON data from the trip plan and directions.
+
+    Args:
+        start: Starting location
+        end: Ending location
+        directions: Google Maps directions result
+        preferences: User preferences
+        trip_plan: Generated trip plan text
+        itinerary: Planned itinerary data
+
+    Returns:
+        GeoJSON FeatureCollection
+    """
+    features = []
+
+    # Extract route points from directions
+    route_points = extract_route_points(directions)
+
+    if route_points:
+        # Create the main route line
+        route_feature = {
+            "type": "Feature",
+            "properties": {
+                "name": f"Route from {start} to {end}",
+                "description": "Main bikepacking route",
+                "stroke": "#0066cc",
+                "stroke-width": 4,
+                "stroke-opacity": 0.8
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": route_points
+            }
+        }
+        features.append(route_feature)
+
+    # Add waypoint markers from itinerary
+    if 'itinerary' in itinerary:
+        daily_plans = itinerary['itinerary']
+
+        for day_key in sorted(daily_plans.keys()):
+            day_plan = daily_plans[day_key]
+            day_num = day_key.replace('day_', '')
+
+            # Try to get coordinates for the end location
+            end_location = day_plan.get('end_location', '')
+            if end_location and gmaps:
+                try:
+                    geocode_result = gmaps.geocode(end_location)  # type: ignore
+                    if geocode_result:
+                        location = geocode_result[0]['geometry']['location']
+
+                        waypoint_feature = {
+                            "type": "Feature",
+                            "properties": {
+                                "name": f"Day {day_num}: {end_location}",
+                                "description": f"Overnight: {day_plan.get('overnight_location', 'Unknown')}",
+                                "marker-color": "#ff6600",
+                                "marker-size": "large",
+                                "marker-symbol": f"{day_num}"
+                            },
+                            "geometry": {
+                                "type": "Point",
+                                "coordinates": [location['lng'], location['lat']]
+                            }
+                        }
+                        features.append(waypoint_feature)
+                except Exception as e:
+                    print(f"Warning: Could not geocode {end_location}: {e}")
+
+    # Create the GeoJSON FeatureCollection
+    geojson_data = {
+        "type": "FeatureCollection",
+        "features": features,
+        "properties": {
+            "name": f"Bikepacking Trip: {start} to {end}",
+            "description": "Generated by DirtGenie AI Trip Planner"
+        }
+    }
+
+    return geojson_data
+
+
+def plan_tour_itinerary_with_keys(start: str, end: str, nights: int, preferences: Dict[str, str],
+                                  desires: List[str], departure_date: Optional[str] = None,
+                                  openai_key: Optional[str] = None, google_maps_key: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Plan tour itinerary with user-provided API keys.
+    """
+    # Temporarily set up clients with user-provided keys
+    original_openai_client = globals().get('openai_client')
+    original_gmaps = globals().get('gmaps')
+
+    try:
+        if openai_key:
+            global openai_client
+            openai_client = OpenAI(api_key=openai_key)
+
+        if google_maps_key:
+            global gmaps
+            gmaps = googlemaps.Client(key=google_maps_key)
+
+        return plan_tour_itinerary(start, end, nights, preferences, desires, departure_date)
+
+    finally:
+        # Restore original clients
+        globals()['openai_client'] = original_openai_client
+        globals()['gmaps'] = original_gmaps
+
+
+def get_multi_waypoint_directions_with_keys(itinerary: Dict[str, Any], google_maps_key: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Get multi-waypoint directions with user-provided Google Maps API key.
+    """
+    original_gmaps = globals().get('gmaps')
+
+    try:
+        if google_maps_key:
+            global gmaps
+            gmaps = googlemaps.Client(key=google_maps_key)
+
+        return get_multi_waypoint_directions(itinerary)
+
+    finally:
+        # Restore original client
+        globals()['gmaps'] = original_gmaps
+
+
+def generate_trip_plan_with_keys(start: str, end: str, nights: int, preferences: Dict[str, str],
+                                 itinerary: Dict[str, Any], directions: Dict[str, Any],
+                                 departure_date: Optional[str] = None, desires: Optional[List[str]] = None,
+                                 openai_key: Optional[str] = None) -> str:
+    """
+    Generate trip plan with user-provided OpenAI API key.
+    """
+    original_openai_client = globals().get('openai_client')
+
+    try:
+        if openai_key:
+            global openai_client
+            openai_client = OpenAI(api_key=openai_key)
+
+        return generate_trip_plan(start, end, nights, preferences, itinerary, directions, departure_date, desires)
+
+    finally:
+        # Restore original client
+        globals()['openai_client'] = original_openai_client
+
+
+def create_geojson_with_keys(start: str, end: str, directions: Dict[str, Any],
+                             preferences: Dict[str, Any], trip_plan: str,
+                             itinerary: Dict[str, Any], google_maps_key: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Create GeoJSON with user-provided Google Maps API key.
+    """
+    original_gmaps = globals().get('gmaps')
+
+    try:
+        if google_maps_key:
+            global gmaps
+            gmaps = googlemaps.Client(key=google_maps_key)
+
+        return create_geojson(start, end, directions, preferences, trip_plan, itinerary)
+
+    finally:
+        # Restore original client
+        globals()['gmaps'] = original_gmaps

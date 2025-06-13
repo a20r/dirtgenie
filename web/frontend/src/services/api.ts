@@ -3,7 +3,7 @@ import { TripPlanRequest, TripPlanResponse, TripRevisionRequest } from '../types
 
 // In unified mode, API calls are proxied through nginx with /api prefix
 // In development mode, direct calls to backend port
-const API_BASE_URL = process.env.REACT_APP_API_URL || 
+const API_BASE_URL = process.env.REACT_APP_API_URL ||
     (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:8000');
 
 const api = axios.create({
@@ -11,6 +11,21 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+});
+
+// Add request interceptor to include API keys from session storage
+api.interceptors.request.use((config) => {
+    const openaiKey = sessionStorage.getItem('openai_api_key');
+    const googleMapsKey = sessionStorage.getItem('google_maps_api_key');
+
+    if (openaiKey) {
+        config.headers['X-OpenAI-Key'] = openaiKey;
+    }
+    if (googleMapsKey) {
+        config.headers['X-Google-Maps-Key'] = googleMapsKey;
+    }
+
+    return config;
 });
 
 export const dirtgenieApi = {
