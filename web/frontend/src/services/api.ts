@@ -4,7 +4,7 @@ import { TripPlanRequest, TripPlanResponse, TripRevisionRequest } from '../types
 // In unified mode, API calls are proxied through nginx with /api prefix
 // In development mode, direct calls to backend port
 const API_BASE_URL = process.env.REACT_APP_API_URL ||
-    (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:8000');
+    (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:8000');
 
 const api = axios.create({
     baseURL: API_BASE_URL,
