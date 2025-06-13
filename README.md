@@ -1,6 +1,9 @@
-# 🚴‍♀️ DirtGenie - AI-Powered Bikepacking Trip Planner
+# 🚴‍♀️ DirtGenie### 🖥️ Dual Interface
+- **🌐 Web App**: Modern React frontend with FastAPI backend, responsive design for all devices
+- **⌨️ CLI Tool**: Powerful command-line interface for automation and scripting
+- **📱 Mobile-Friendly**: Web interface works great on tablets and phonesI-Powered Bikepacking Trip Planner
 
-An intelligent trip planner that creates detailed bikepacking itineraries using OpenAI's GPT models and Google Maps routing data. DirtGenie features both a powerful CLI tool and a beautiful web interface built with Streamlit.
+An intelligent trip planner that creates detailed bikepacking itineraries using OpenAI's GPT models and Google Maps routing data. DirtGenie features both a powerful CLI tool and a modern web application built with React and FastAPI.
 
 ## ✨ Features
 
@@ -16,7 +19,7 @@ An intelligent trip planner that creates detailed bikepacking itineraries using 
 - **Rich Output Formats**: Detailed markdown plans + GeoJSON for mapping apps
 
 ### �️ Dual Interface
-- **🖥️ Web App**: Beautiful Streamlit interface with interactive maps and real-time feedback
+- **🖥️ Web App**: Modern React interface with FastAPI backend, interactive maps and real-time feedback
 - **⌨️ CLI Tool**: Powerful command-line interface for automation and scripting
 - **📱 Mobile-Friendly**: Web interface works great on tablets and phones
 
@@ -29,12 +32,24 @@ An intelligent trip planner that creates detailed bikepacking itineraries using 
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.8+ 
-- OpenAI API Key ([Get one here](https://platform.openai.com/api-keys))
-- Google Maps API Key ([Setup guide](https://console.cloud.google.com/))
+### Web Application (Recommended)
 
-### 1. Installation
+The easiest way to get started is with our web application:
+
+```bash
+# Clone the repository
+git clone https://github.com/a20r/dirtgenie.git
+cd dirtgenie/web
+
+# Start the application (installs dependencies automatically)
+./start.sh
+```
+
+This will start both the backend and frontend servers, and open your browser to http://localhost:3000.
+
+**API Keys**: You'll be prompted to enter your OpenAI and Google Maps API keys in the web interface.
+
+### CLI Tool
 
 ```bash
 # Clone the repository
@@ -52,9 +67,7 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-### 2. API Setup
-
-Create a `.env` file in the project root:
+For CLI usage, you'll need to set up API keys. Create a `.env` file in the project root:
 
 ```bash
 OPENAI_API_KEY=your-openai-api-key-here
@@ -67,19 +80,7 @@ export OPENAI_API_KEY="your-openai-api-key-here"
 export GOOGLE_MAPS_API_KEY="your-google-maps-api-key-here"
 ```
 
-### 3. Run the Web App (Recommended)
-
-```bash
-# Start the Streamlit web interface
-streamlit run src/dirtgenie/web_app.py
-
-# Or use the convenience script
-./scripts/dirtgenie-web
-```
-
-Open your browser to `http://localhost:8501` and start planning!
-
-### 4. Use the CLI Tool
+### CLI Usage
 
 ```bash
 # Plan a trip from command line
@@ -89,57 +90,37 @@ python src/dirtgenie/planner.py --start "San Francisco, CA" --end "Los Angeles, 
 ./scripts/dirtgenie --start "Portland, OR" --end "Seattle, WA" --nights 5
 ```
 
-## 🐳 Docker Quick Start
+## 🐳 Docker Deployment
 
-### Run with Docker (Recommended)
+### Docker Deployment
 
-```bash
-# Run the web app
-docker run -p 8501:8501 \
-  -e OPENAI_API_KEY=your_openai_key_here \
-  -e GOOGLE_MAPS_API_KEY=your_google_key_here \
-  ghcr.io/a20r/dirtgenie:latest
-
-# Or use docker-compose for easier management
-echo "OPENAI_API_KEY=your_openai_key_here" > .env
-echo "GOOGLE_MAPS_API_KEY=your_google_key_here" >> .env
-docker-compose up dirtgenie-web
-```
-
-### Docker Commands
+The web application can be deployed using Docker:
 
 ```bash
-# Start web interface
-docker run -p 8501:8501 \
-  -e OPENAI_API_KEY=your_openai_key \
-  -e GOOGLE_MAPS_API_KEY=your_google_key \
-  ghcr.io/a20r/dirtgenie:latest web
+# Build and run locally
+docker build -f Dockerfile.simple -t dirtgenie-web .
+docker run -p 80:80 dirtgenie-web
 
-# Run CLI command
-docker run -v $(pwd):/data \
-  -e OPENAI_API_KEY=your_openai_key \
-  -e GOOGLE_MAPS_API_KEY=your_google_key \
-  ghcr.io/a20r/dirtgenie:latest cli --start "Berlin" --end "Prague" --nights 7
-
-# Interactive shell
-docker run -it \
-  -e OPENAI_API_KEY=your_openai_key \
-  -e GOOGLE_MAPS_API_KEY=your_google_key \
-  ghcr.io/a20r/dirtgenie:latest shell
-
-# Show help
-docker run ghcr.io/a20r/dirtgenie:latest help
+# The app will be available at http://localhost
 ```
+
+### Railway Deployment
+
+Deploy to Railway using the included configuration:
+
+1. Connect your GitHub repository to Railway
+2. The `railway.json` config will automatically deploy the web app
+3. Set environment variables in Railway dashboard (optional - users provide their own API keys)
 
 ## 📖 Usage Examples
 
 ### Web Interface
-1. **Open the web app**: `streamlit run src/dirtgenie/web_app.py`
-2. **Enter your API keys** in the sidebar
+1. **Open the web app**: Navigate to http://localhost:3000 (or your deployed URL)
+2. **Enter your API keys**: Securely provide your OpenAI and Google Maps API keys
 3. **Plan your trip**: Fill in start/end locations, nights, and preferences
-4. **Get your plan**: View detailed itinerary and interactive map
-5. **Provide feedback**: Use natural language to refine your plan
-6. **Download**: Get markdown plan and GeoJSON route data
+4. **Get your plan**: View detailed itinerary with interactive elements
+5. **Revise your trip**: Use the revision feature to refine your plan
+6. **Export**: Download trip packages and export to Notion
 
 ### Command Line Examples
 
@@ -158,18 +139,31 @@ docker run ghcr.io/a20r/dirtgenie:latest help
 
 ```
 dirtgenie/
-├── src/dirtgenie/           # Main package
+├── web/                     # Modern web application
+│   ├── backend/             # FastAPI backend
+│   │   ├── main.py          # API server
+│   │   └── requirements.txt # Backend dependencies  
+│   ├── frontend/            # React frontend
+│   │   ├── src/             # React source code
+│   │   ├── package.json     # Frontend dependencies
+│   │   └── public/          # Static assets
+│   ├── start.sh             # Development startup script
+│   └── README.md            # Web app documentation
+├── src/dirtgenie/           # Core package
 │   ├── __init__.py          # Package initialization
 │   ├── planner.py           # Core planning logic (CLI)
-│   └── web_app.py           # Streamlit web interface
-├── scripts/                 # Convenience scripts
+│   └── web_app.py           # Legacy Streamlit interface (deprecated)
+├── scripts/                 # CLI convenience scripts
 │   ├── dirtgenie            # CLI entry point
-│   └── dirtgenie-web        # Web app entry point
+│   └── dirtgenie-web        # Legacy web entry (deprecated)
 ├── tests/                   # Test suite
 ├── docs/                    # Documentation
-├── requirements.txt         # Dependencies
-├── setup.py                 # Package setup
-└── README.md               # This file
+├── Dockerfile.simple        # Docker configuration
+├── nginx.conf              # Nginx configuration
+├── railway.json            # Railway deployment config
+├── requirements.txt        # Core dependencies
+├── setup.py               # Package setup
+└── README.md              # This file
 ```
 
 ## 🧠 How It Works
@@ -202,15 +196,17 @@ DirtGenie uses a sophisticated 3-step planning methodology that creates better b
 
 ## 📱 Web App Features
 
-The Streamlit web interface provides a user-friendly experience with:
+The modern React/FastAPI web interface provides a complete planning experience:
 
-- **📊 Interactive Dashboard**: Input fields for all trip parameters
-- **🗺️ Live Map Visualization**: See your route with overnight stops marked
-- **📄 Formatted Trip Plans**: Beautiful, readable itineraries
-- **💬 Feedback System**: Iteratively improve your plan with natural language
-- **📥 Download Options**: Get markdown plans and GeoJSON route data
-- **🔧 API Key Management**: Secure in-session storage of your credentials
-- **📱 Mobile-Friendly**: Works great on tablets and phones
+- **🎨 Modern UI**: Clean, responsive interface built with React and Tailwind CSS
+- **🗺️ Trip Planning**: Complete bikepacking trip planning with AI assistance
+- **� Tire Size Integration**: Smart route recommendations based on bike setup
+- **� Departure Date Planning**: Weather and seasonal planning capabilities
+- **✏️ Trip Revisions**: Easy plan modifications with AI assistance
+- **📱 Mobile Friendly**: Responsive design that works on all devices
+- **� Export Options**: Download trip packages and export to Notion
+- **� API Key Management**: User-provided API keys for secure, cost-controlled usage
+- **� Real-time Status**: Live backend health monitoring and feedback
 
 ## 🎯 Smart Features
 
@@ -368,10 +364,11 @@ mypy src/
 - Use the feedback system in the web app to refine results
 - Consider the route as a starting point for manual refinement
 
-**Streamlit app issues**
-- Clear browser cache and restart the app
-- Check that all dependencies are installed: `pip install -r requirements.txt`
-- Verify Python version compatibility (3.8+)
+**Web app issues**
+- Check that the backend is running (port 8000) and frontend (port 3000)
+- Verify all dependencies are installed by running `./web/start.sh`
+- Clear browser cache and try refreshing the page
+- Check browser console for any JavaScript errors
 
 ## 📄 License
 
@@ -381,7 +378,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **OpenAI** for providing the GPT models that power the intelligent planning
 - **Google Maps** for comprehensive bicycle routing data
-- **Streamlit** for the amazing web app framework
+- **React & FastAPI** for the modern web application framework
 - **The bikepacking community** for inspiration and real-world testing
 
 ## 🚀 Roadmap
