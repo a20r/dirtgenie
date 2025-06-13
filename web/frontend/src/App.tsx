@@ -20,10 +20,7 @@ function App() {
             try {
                 const response = await fetch('/health');
                 if (response.ok) {
-                    // If health check passes, check if backend has API keys
-                    const healthData = await response.json();
-
-                    // Check if we're in development mode or if keys are already configured
+                    // If health check passes, check if we're in development mode or if keys are already configured
                     const isDevelopment = window.location.hostname === 'localhost' ||
                         window.location.hostname === '127.0.0.1';
 
