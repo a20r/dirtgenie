@@ -29,8 +29,8 @@ api.interceptors.request.use((config) => {
 });
 
 export const dirtgenieApi = {
-    // Health check
-    healthCheck: () => api.get('/health'),
+    // Health check (bypass API base URL since nginx handles this directly)
+    healthCheck: () => axios.get('/health'),
 
     // Get default profile
     getDefaultProfile: () => api.get('/api/default-profile'),
