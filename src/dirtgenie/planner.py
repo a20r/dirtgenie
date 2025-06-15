@@ -24,11 +24,11 @@ def load_env():
     """Load environment variables from .env file if it exists."""
     env_file = Path(".env")
     if env_file.exists():
-        with open(env_file, 'r') as f:
+        with open(env_file, "r") as f:
             for line in f:
                 line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    key, value = line.split('=', 1)
+                if line and not line.startswith("#") and "=" in line:
+                    key, value = line.split("=", 1)
                     os.environ[key.strip()] = value.strip()
 
 
@@ -44,21 +44,25 @@ openai_client = None
 gmaps: googlemaps.Client | None = None
 
 
-def initialize_clients():
-    """Initialize API clients and check for required API keys."""
+def initialize_clients() -> None:
+    """Initialize API clients if API keys are available."""
+
     global openai_client, gmaps
 
-    if not OPENAI_API_KEY:
-        raise ValueError("Please set OPENAI_API_KEY environment variable")
-    if not GOOGLE_MAPS_API_KEY:
-        raise ValueError("Please set GOOGLE_MAPS_API_KEY environment variable")
+    if OPENAI_API_KEY:
+        openai_client = OpenAI(api_key=OPENAI_API_KEY)
+    else:
+        print("Warning: OPENAI_API_KEY not set; OpenAI features disabled")
 
-    # Initialize clients
-    openai_client = OpenAI(api_key=OPENAI_API_KEY)
-    gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
+    if GOOGLE_MAPS_API_KEY:
+        gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
+    else:
+        print("Warning: GOOGLE_MAPS_API_KEY not set; Google Maps features disabled")
 
 
-def get_bicycle_directions(start: str, end: str, waypoints: Optional[List[str]] = None) -> Dict[str, Any]:
+def get_bicycle_directions(
+    start: str, end: str, waypoints: Optional[List[str]] = None
+) -> Dict[str, Any]:
     """
     Get bicycle directions from Google Maps API.
 
@@ -70,8 +74,13 @@ def get_bicycle_directions(start: str, end: str, waypoints: Optional[List[str]] 
     Returns:
         Dictionary containing route information
     """
-    if not gmaps:
-        raise ValueError("Google Maps client not initialized. Please set GOOGLE_MAPS_API_KEY.")
+    global gmaps
+    if gmaps is None:
+        if GOOGLE_MAPS_API_KEY:
+            gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
+        else:
+            print("Warning: GOOGLE_MAPS_API_KEY not set; returning empty directions")
+            return {}
 
     try:
         # Handle None waypoints for the API call
@@ -83,7 +92,7 @@ def get_bicycle_directions(start: str, end: str, waypoints: Optional[List[str]] 
             mode="bicycling",
             waypoints=waypoints_param,
             optimize_waypoints=True,
-            units="metric"
+            units="metric",
         )
 
         if not directions_result:
@@ -107,31 +116,33 @@ def extract_route_points(directions: Dict[str, Any]) -> List[Tuple[float, float]
     """
     points = []
 
-    if not directions or 'legs' not in directions:
+    if not directions or "legs" not in directions:
         return points
 
-    for leg in directions['legs']:
-        for step in leg['steps']:
+    for leg in directions["legs"]:
+        for step in leg["steps"]:
             # Add start point
-            start_lat = step['start_location']['lat']
-            start_lng = step['start_location']['lng']
+            start_lat = step["start_location"]["lat"]
+            start_lng = step["start_location"]["lng"]
             points.append((start_lng, start_lat))
 
             # Try to add polyline points if available
             try:
-                if 'polyline' in step and 'points' in step['polyline']:
-                    polyline_points = polyline.decode(step['polyline']['points'])
+                if "polyline" in step and "points" in step["polyline"]:
+                    polyline_points = polyline.decode(step["polyline"]["points"])
                     for point in polyline_points:
-                        points.append((point[1], point[0]))  # polyline returns [lat, lng], we want [lng, lat]
+                        points.append(
+                            (point[1], point[0])
+                        )  # polyline returns [lat, lng], we want [lng, lat]
             except Exception as e:
                 print(f"Warning: Could not decode polyline for step: {e}")
                 # Continue without detailed polyline points
 
     # Add final destination
-    if directions['legs']:
-        last_leg = directions['legs'][-1]
-        end_lat = last_leg['end_location']['lat']
-        end_lng = last_leg['end_location']['lng']
+    if directions["legs"]:
+        last_leg = directions["legs"][-1]
+        end_lat = last_leg["end_location"]["lat"]
+        end_lng = last_leg["end_location"]["lng"]
         points.append((end_lng, end_lat))
 
     return points
@@ -145,14 +156,14 @@ def create_default_profile() -> Dict[str, Any]:
         Dictionary with default preferences
     """
     return {
-        'accommodation': 'mixed',
-        'stealth_camping': False,
-        'fitness_level': 'intermediate',
-        'daily_distance': '50-80',
-        'terrain': 'mixed',
-        'tire_size': '700x35c (Gravel - Standard)',
-        'budget': 'moderate',
-        'interests': ['nature', 'adventure']
+        "accommodation": "mixed",
+        "stealth_camping": False,
+        "fitness_level": "intermediate",
+        "daily_distance": "50-80",
+        "terrain": "mixed",
+        "tire_size": "700x35c (Gravel - Standard)",
+        "budget": "moderate",
+        "interests": ["nature", "adventure"],
     }
 
 
@@ -181,28 +192,30 @@ def load_profile(profile_path: str) -> Dict[str, Any]:
         default_profile = create_default_profile()
         save_profile(default_profile, profile_path)
 
-        print(f"✅ Default profile created. You can edit {profile_path} to customize your preferences.")
+        print(
+            f"✅ Default profile created. You can edit {profile_path} to customize your preferences."
+        )
         return default_profile
 
     try:
-        with open(profile_file, 'r', encoding='utf-8') as f:
+        with open(profile_file, "r", encoding="utf-8") as f:
             profile_data = yaml.safe_load(f)
 
         if not isinstance(profile_data, dict):
             raise ValueError("Profile file must contain a YAML dictionary")
 
         # Validate required fields
-        required_fields = ['accommodation', 'fitness_level', 'daily_distance', 'terrain', 'budget']
+        required_fields = ["accommodation", "fitness_level", "daily_distance", "terrain", "budget"]
         missing_fields = [field for field in required_fields if field not in profile_data]
 
         if missing_fields:
             raise ValueError(f"Profile file missing required fields: {', '.join(missing_fields)}")
 
         # Set defaults for optional fields
-        if 'stealth_camping' not in profile_data:
-            profile_data['stealth_camping'] = False
-        if 'interests' not in profile_data:
-            profile_data['interests'] = []
+        if "stealth_camping" not in profile_data:
+            profile_data["stealth_camping"] = False
+        if "interests" not in profile_data:
+            profile_data["interests"] = []
 
         print(f"✅ Loaded profile from: {profile_path}")
         return profile_data
@@ -254,11 +267,13 @@ interests:
 {yaml.dump(profile_data['interests'], default_flow_style=False, indent=2).strip()}
 """
 
-    with open(profile_file, 'w', encoding='utf-8') as f:
+    with open(profile_file, "w", encoding="utf-8") as f:
         f.write(yaml_content)
 
 
-def get_user_preferences(interactive: bool = False, profile_path: str = "profile.yml") -> Dict[str, Any]:
+def get_user_preferences(
+    interactive: bool = False, profile_path: str = "profile.yml"
+) -> Dict[str, Any]:
     """
     Get user preferences either interactively or from a profile file.
 
@@ -290,44 +305,44 @@ def ask_follow_up_questions() -> Dict[str, str]:
 
     # Accommodation preference
     while True:
-        accommodation = input("💤 Accommodation preference (camping/hotels/mixed): ").strip().lower()
-        if accommodation in ['camping', 'hotels', 'mixed']:
-            preferences['accommodation'] = accommodation
+        accommodation = (
+            input("💤 Accommodation preference (camping/hotels/mixed): ").strip().lower()
+        )
+        if accommodation in ["camping", "hotels", "mixed"]:
+            preferences["accommodation"] = accommodation
             break
         print("Please choose: camping, hotels, or mixed")
 
     # Stealth camping
-    if preferences['accommodation'] in ['camping', 'mixed']:
+    if preferences["accommodation"] in ["camping", "mixed"]:
         while True:
             stealth = input("🏕️  Is stealth camping appropriate/desired? (yes/no): ").strip().lower()
-            if stealth in ['yes', 'no', 'y', 'n']:
-                preferences['stealth_camping'] = stealth in ['yes', 'y']
+            if stealth in ["yes", "no", "y", "n"]:
+                preferences["stealth_camping"] = stealth in ["yes", "y"]
                 break
             print("Please answer yes or no")
 
     # Fitness level
     while True:
         fitness = input("💪 Fitness level (beginner/intermediate/advanced): ").strip().lower()
-        if fitness in ['beginner', 'intermediate', 'advanced']:
-            preferences['fitness_level'] = fitness
+        if fitness in ["beginner", "intermediate", "advanced"]:
+            preferences["fitness_level"] = fitness
             break
         print("Please choose: beginner, intermediate, or advanced")
 
     # Daily distance preference
-    distance_ranges = {
-        'beginner': '30-50',
-        'intermediate': '50-80',
-        'advanced': '80-120'
-    }
-    default_range = distance_ranges[preferences['fitness_level']]
-    daily_distance = input(f"🚴 Preferred daily distance in km (default: {default_range}): ").strip()
-    preferences['daily_distance'] = daily_distance if daily_distance else default_range
+    distance_ranges = {"beginner": "30-50", "intermediate": "50-80", "advanced": "80-120"}
+    default_range = distance_ranges[preferences["fitness_level"]]
+    daily_distance = input(
+        f"🚴 Preferred daily distance in km (default: {default_range}): "
+    ).strip()
+    preferences["daily_distance"] = daily_distance if daily_distance else default_range
 
     # Terrain preference
     while True:
         terrain = input("🏔️  Terrain preference (paved/gravel/mixed/challenging): ").strip().lower()
-        if terrain in ['paved', 'gravel', 'mixed', 'challenging']:
-            preferences['terrain'] = terrain
+        if terrain in ["paved", "gravel", "mixed", "challenging"]:
+            preferences["terrain"] = terrain
             break
         print("Please choose: paved, gravel, mixed, or challenging")
 
@@ -335,44 +350,63 @@ def ask_follow_up_questions() -> Dict[str, str]:
     print("\n🚴 What tire size are you riding?")
     print("1. Road bike (700x23-28c)")
     print("2. Gravel bike (700x32-40c)")
-    print("3. Mountain bike (26\", 27.5\", or 29\")")
+    print('3. Mountain bike (26", 27.5", or 29")')
     print("4. Other/Custom")
 
     while True:
         tire_choice = input("Choose option (1-4): ").strip()
-        if tire_choice == '1':
-            preferences['tire_size'] = input(
-                "Specific size (e.g., 700x25c) or press Enter for 700x25c: ").strip() or "700x25c"
+        if tire_choice == "1":
+            preferences["tire_size"] = (
+                input("Specific size (e.g., 700x25c) or press Enter for 700x25c: ").strip()
+                or "700x25c"
+            )
             break
-        elif tire_choice == '2':
-            preferences['tire_size'] = input(
-                "Specific size (e.g., 700x35c) or press Enter for 700x35c: ").strip() or "700x35c"
+        elif tire_choice == "2":
+            preferences["tire_size"] = (
+                input("Specific size (e.g., 700x35c) or press Enter for 700x35c: ").strip()
+                or "700x35c"
+            )
             break
-        elif tire_choice == '3':
-            preferences['tire_size'] = input(
-                "Specific size (e.g., 29\" x 2.25in) or press Enter for 29\" x 2.1in: ").strip() or "29\" x 2.1in"
+        elif tire_choice == "3":
+            preferences["tire_size"] = (
+                input('Specific size (e.g., 29" x 2.25in) or press Enter for 29" x 2.1in: ').strip()
+                or '29" x 2.1in'
+            )
             break
-        elif tire_choice == '4':
-            preferences['tire_size'] = input("Enter your tire size (e.g., 650b x 47mm): ").strip() or "700x35c"
+        elif tire_choice == "4":
+            preferences["tire_size"] = (
+                input("Enter your tire size (e.g., 650b x 47mm): ").strip() or "700x35c"
+            )
             break
         print("Please choose 1, 2, 3, or 4")
 
     # Budget
     while True:
         budget = input("💰 Daily budget range (budget/moderate/luxury): ").strip().lower()
-        if budget in ['budget', 'moderate', 'luxury']:
-            preferences['budget'] = budget
+        if budget in ["budget", "moderate", "luxury"]:
+            preferences["budget"] = budget
             break
         print("Please choose: budget, moderate, or luxury")
 
     # Interests
-    interests = input("🎯 Special interests (food/photography/history/nature/adventure - separate with commas): ").strip()
-    preferences['interests'] = [interest.strip() for interest in interests.split(',') if interest.strip()]
+    interests = input(
+        "🎯 Special interests (food/photography/history/nature/adventure - separate with commas): "
+    ).strip()
+    preferences["interests"] = [
+        interest.strip() for interest in interests.split(",") if interest.strip()
+    ]
 
     return preferences
 
 
-def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str, str], desires: List[str], departure_date: Optional[str] = None) -> Dict[str, Any]:
+def plan_tour_itinerary(
+    start: str,
+    end: str,
+    nights: int,
+    preferences: Dict[str, str],
+    desires: Optional[List[str]] = None,
+    departure_date: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     First step: Plan the tour itinerary with specific waypoints and overnight stops.
     This determines WHERE to go before figuring out HOW to get there.
@@ -387,27 +421,35 @@ def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str
     Returns:
         Dictionary containing planned itinerary with waypoints and overnight stops
     """
-    if not openai_client:
-        raise ValueError("OpenAI client not initialized. Please set OPENAI_API_KEY.")
+    global openai_client
+    if openai_client is None and OPENAI_API_KEY:
+        openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
     # Get daily distance preference
-    daily_distance = preferences.get('daily_distance', '60-80')
-    if 'km' in daily_distance:
-        daily_distance = daily_distance.replace('km', '').strip()
+    daily_distance = preferences.get("daily_distance", "60-80")
+    if "km" in daily_distance:
+        daily_distance = daily_distance.replace("km", "").strip()
 
     # Detect if this is a closed-loop tour (start and end are the same or very similar)
-    is_closed_loop = (start.lower().strip() == end.lower().strip() or
-                      # Also check if they're essentially the same location with slight variations
-                      (start.replace(',', '').replace(' ', '').lower() in end.replace(',', '').replace(' ', '').lower() or
-                       end.replace(',', '').replace(' ', '').lower() in start.replace(',', '').replace(' ', '').lower()))
+    is_closed_loop = (
+        start.lower().strip() == end.lower().strip()
+        or
+        # Also check if they're essentially the same location with slight variations
+        (
+            start.replace(",", "").replace(" ", "").lower()
+            in end.replace(",", "").replace(" ", "").lower()
+            or end.replace(",", "").replace(" ", "").lower()
+            in start.replace(",", "").replace(" ", "").lower()
+        )
+    )
 
     # Estimate rough distance for planning
     try:
         if is_closed_loop:
             # For closed loops, we can't use direct distance, so estimate based on daily distance and nights
             # Parse daily distance range to get average
-            if '-' in daily_distance:
-                min_dist, max_dist = map(int, daily_distance.split('-'))
+            if "-" in daily_distance:
+                min_dist, max_dist = map(int, daily_distance.split("-"))
                 avg_daily_distance = (min_dist + max_dist) / 2
             else:
                 avg_daily_distance = int(daily_distance.split()[0]) if daily_distance else 60
@@ -416,7 +458,9 @@ def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str
         else:
             # Get a quick direct route estimate for planning purposes only
             rough_directions = get_bicycle_directions(start, end)
-            total_distance = sum(leg['distance']['value'] for leg in rough_directions['legs']) / 1000
+            total_distance = (
+                sum(leg["distance"]["value"] for leg in rough_directions["legs"]) / 1000
+            )
     except:
         # Fallback if route query fails
         total_distance = 100  # Default assumption
@@ -428,8 +472,8 @@ def plan_tour_itinerary(start: str, end: str, nights: int, preferences: Dict[str
     if is_closed_loop:
         # Calculate maximum practical radius for closed-loop planning
         # Conservative estimate: assume you need to be able to get back within remaining days
-        if '-' in daily_distance:
-            min_daily, max_daily = map(int, daily_distance.split('-'))
+        if "-" in daily_distance:
+            min_daily, max_daily = map(int, daily_distance.split("-"))
             avg_daily = (min_daily + max_daily) / 2
         else:
             avg_daily = int(daily_distance.split()[0]) if daily_distance else 50
@@ -667,16 +711,22 @@ IMPORTANT: Use web search to find:
         response = openai_client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system",
-                    "content": "You are an expert bikepacking tour planner with access to current web information. CRITICAL: You must respond with ONLY valid JSON exactly as requested - no additional text, no markdown, no explanations outside the JSON. Be extremely detailed within the JSON structure. IMPORTANT: Use your web search capabilities to find current information about: 1) Specific accommodations (campgrounds, hotels, hostels) with availability, pricing, and booking details, 2) Current weather forecasts for the planned travel dates and locations, 3) Trail conditions and any closures, 4) Local attractions and their current operating status. Search for real, specific places and current information. Include MANY waypoints and detailed descriptions for each day."},
-                {"role": "user", "content": prompt}
+                {
+                    "role": "system",
+                    "content": "You are an expert bikepacking tour planner with access to current web information. CRITICAL: You must respond with ONLY valid JSON exactly as requested - no additional text, no markdown, no explanations outside the JSON. Be extremely detailed within the JSON structure. IMPORTANT: Use your web search capabilities to find current information about: 1) Specific accommodations (campgrounds, hotels, hostels) with availability, pricing, and booking details, 2) Current weather forecasts for the planned travel dates and locations, 3) Trail conditions and any closures, 4) Local attractions and their current operating status. Search for real, specific places and current information. Include MANY waypoints and detailed descriptions for each day. When planning closed-loop tours, ensure the route forms a loop back to the start.",
+                },
+                {"role": "user", "content": prompt},
             ],
             max_tokens=4000,
-            temperature=0.7
+            temperature=0.7,
         )
 
         import json
-        content = response.choices[0].message.content
+
+        if hasattr(response, "choices"):
+            content = response.choices[0].message.content
+        else:
+            content = response["choices"][0]["message"]["content"]
         if not content:
             raise ValueError("Empty response from OpenAI")
 
@@ -684,13 +734,13 @@ IMPORTANT: Use web search to find:
 
         # More robust JSON extraction
         # Look for JSON content between markers or extract the first complete JSON object
-        if itinerary_json.startswith('```json'):
+        if itinerary_json.startswith("```json"):
             itinerary_json = itinerary_json[7:]
-        if itinerary_json.endswith('```'):
+        if itinerary_json.endswith("```"):
             itinerary_json = itinerary_json[:-3]
 
         # Find the start and end of the JSON object
-        json_start = itinerary_json.find('{')
+        json_start = itinerary_json.find("{")
         if json_start == -1:
             raise ValueError("No JSON object found in response")
 
@@ -698,9 +748,9 @@ IMPORTANT: Use web search to find:
         brace_count = 0
         json_end = -1
         for i, char in enumerate(itinerary_json[json_start:], json_start):
-            if char == '{':
+            if char == "{":
                 brace_count += 1
-            elif char == '}':
+            elif char == "}":
                 brace_count -= 1
                 if brace_count == 0:
                     json_end = i + 1
@@ -725,18 +775,18 @@ IMPORTANT: Use web search to find:
                     "end_location": f"Midpoint between {start} and {end}",
                     "overnight_location": "Local camping area",
                     "highlights": ["Scenic route", "Local attractions"],
-                    "estimated_distance_km": 80
+                    "estimated_distance_km": 80,
                 },
                 f"day_{nights + 1}": {
                     "start_location": f"Midpoint between {start} and {end}",
                     "end_location": end,
                     "overnight_location": "Arrive at destination",
                     "highlights": ["Final stretch", "Destination arrival"],
-                    "estimated_distance_km": 80
-                }
+                    "estimated_distance_km": 80,
+                },
             },
             "total_estimated_distance": 160,
-            "route_summary": f"Simple route from {start} to {end}"
+            "route_summary": f"Simple route from {start} to {end}",
         }
 
 
@@ -750,17 +800,45 @@ def get_multi_waypoint_directions(itinerary: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Google Maps directions with all waypoints
     """
-    if not gmaps:
-        raise ValueError("Google Maps client not initialized. Please set GOOGLE_MAPS_API_KEY.")
+    global gmaps
+    if gmaps is None:
+        if GOOGLE_MAPS_API_KEY:
+            gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
+        else:
+            # Fallback: build simple directions without API calls
+            daily_plans = itinerary["itinerary"]
+            legs = []
+            prev = None
+            for day_key in sorted(daily_plans.keys()):
+                day_plan = daily_plans[day_key]
+                if prev is None:
+                    start_loc = day_plan["start_location"]
+                else:
+                    start_loc = prev
+                end_loc = day_plan["end_location"]
+                legs.append(
+                    {
+                        "start_address": start_loc,
+                        "end_address": end_loc,
+                        "distance": {"value": 0, "text": "0 km"},
+                        "duration": {"value": 0, "text": "0 mins"},
+                        "start_location": {"lat": 0, "lng": 0},
+                        "end_location": {"lat": 0, "lng": 0},
+                        "steps": [],
+                    }
+                )
+                prev = end_loc
+
+            return {"legs": legs, "routes": [{"legs": legs}]}
 
     # Extract waypoints from itinerary
-    daily_plans = itinerary['itinerary']
+    daily_plans = itinerary["itinerary"]
     waypoints = []
 
     # Get all intermediate stops (exclude final destination)
     for day_key in sorted(daily_plans.keys()):
         day_plan = daily_plans[day_key]
-        end_location = day_plan['end_location']
+        end_location = day_plan["end_location"]
 
         # Don't add the final destination as a waypoint (it will be the destination)
         if day_key != max(daily_plans.keys()):
@@ -770,8 +848,8 @@ def get_multi_waypoint_directions(itinerary: Dict[str, Any]) -> Dict[str, Any]:
     first_day = daily_plans[min(daily_plans.keys())]
     last_day = daily_plans[max(daily_plans.keys())]
 
-    start_location = first_day['start_location']
-    end_location = last_day['end_location']
+    start_location = first_day["start_location"]
+    end_location = last_day["end_location"]
 
     try:
         return get_bicycle_directions(start_location, end_location, waypoints)
@@ -781,9 +859,16 @@ def get_multi_waypoint_directions(itinerary: Dict[str, Any]) -> Dict[str, Any]:
         return get_bicycle_directions(start_location, end_location)
 
 
-def generate_trip_plan(start: str, end: str, nights: int, preferences: Dict[str, str],
-                       itinerary: Dict[str, Any], directions: Dict[str, Any], departure_date: Optional[str] = None,
-                       desires: Optional[List[str]] = None) -> str:
+def generate_trip_plan(
+    start: str,
+    end: str,
+    nights: int,
+    preferences: Dict[str, str],
+    itinerary: Dict[str, Any],
+    directions: Dict[str, Any],
+    departure_date: Optional[str] = None,
+    desires: Optional[List[str]] = None,
+) -> str:
     """
     Generate a detailed trip plan using the planned itinerary and route data.
 
@@ -800,12 +885,17 @@ def generate_trip_plan(start: str, end: str, nights: int, preferences: Dict[str,
         Detailed trip plan as markdown string
     """
 
-    if not openai_client:
-        raise ValueError("OpenAI client not initialized. Please set OPENAI_API_KEY.")
+    global openai_client
+    if openai_client is None and OPENAI_API_KEY:
+        openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
     # Extract route information
-    total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000  # Convert to km
-    total_duration = sum(leg['duration']['value'] for leg in directions['legs']) / 3600  # Convert to hours
+    total_distance = (
+        sum(leg["distance"]["value"] for leg in directions["legs"]) / 1000
+    )  # Convert to km
+    total_duration = (
+        sum(leg["duration"]["value"] for leg in directions["legs"]) / 3600
+    )  # Convert to hours
 
     # Format route and itinerary information
     route_info = format_route_info(directions)
@@ -814,7 +904,7 @@ def generate_trip_plan(start: str, end: str, nights: int, preferences: Dict[str,
     # Create detailed prompt for OpenAI
     departure_info = f"\n- Departure date: {departure_date}" if departure_date else ""
 
-    desires_text = ', '.join(desires) if desires else 'No specific desires provided.'
+    desires_text = ", ".join(desires) if desires else "No specific desires provided."
 
     prompt = f"""
     USER DESIRES:
@@ -878,14 +968,20 @@ Please create a comprehensive trip plan following the example format above. Incl
         response = openai_client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are an expert bikepacking trip planner with extensive knowledge of cycling routes, accommodations, and outdoor safety."},
-                {"role": "user", "content": prompt}
+                {
+                    "role": "system",
+                    "content": "You are an expert bikepacking trip planner with extensive knowledge of cycling routes, accommodations, and outdoor safety.",
+                },
+                {"role": "user", "content": prompt},
             ],
             max_tokens=4000,
-            temperature=0.7
+            temperature=0.7,
         )
 
-        trip_plan = response.choices[0].message.content
+        if hasattr(response, "choices"):
+            trip_plan = response.choices[0].message.content
+        else:
+            trip_plan = response["choices"][0]["message"]["content"]
         if trip_plan:
             trip_plan = trip_plan.strip()
         else:
@@ -899,14 +995,23 @@ Please create a comprehensive trip plan following the example format above. Incl
         return f"Error generating trip plan: {e}"
 
 
-def revise_trip_plan_with_feedback(original_plan: str, feedback: str, start: str, end: str, nights: int,
-                                   preferences: Dict[str, Any], itinerary: Dict[str, Any],
-                                   directions: Dict[str, Any], departure_date: Optional[str] = None) -> str:
+def revise_trip_plan_with_feedback(
+    original_plan: str,
+    feedback: str,
+    start: str,
+    end: str,
+    nights: int,
+    preferences: Dict[str, Any],
+    itinerary: Dict[str, Any],
+    directions: Dict[str, Any],
+    departure_date: Optional[str] = None,
+) -> str:
     """
     Revise an existing trip plan based on user feedback.
     """
-    if not openai_client:
-        return "Error: OpenAI client not initialized"
+    global openai_client
+    if openai_client is None and OPENAI_API_KEY:
+        openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
     # Format the route information
     route_info = format_route_info(directions)
@@ -948,14 +1053,20 @@ Please revise the trip plan based on the user's feedback while maintaining the s
         response = openai_client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": "You are an expert bikepacking trip planner. Revise the existing plan based on the user's feedback while maintaining high quality and practical advice."},
-                {"role": "user", "content": prompt}
+                {
+                    "role": "system",
+                    "content": "You are an expert bikepacking trip planner. Revise the existing plan based on the user's feedback while maintaining high quality and practical advice.",
+                },
+                {"role": "user", "content": prompt},
             ],
             max_tokens=4000,
-            temperature=0.7
+            temperature=0.7,
         )
 
-        revised_plan = response.choices[0].message.content
+        if hasattr(response, "choices"):
+            revised_plan = response.choices[0].message.content
+        else:
+            revised_plan = response["choices"][0]["message"]["content"]
         if revised_plan:
             revised_plan = revised_plan.strip()
         else:
@@ -1008,14 +1119,14 @@ def main():
             nights=args.nights,
             preferences=preferences,
             desires=[],
-            departure_date=args.departure_date
+            departure_date=args.departure_date,
         )
 
         # Step 2: Get route directions
         print("\n🛣️  Getting route directions...")
         directions = get_multi_waypoint_directions(itinerary)
 
-        if not directions or 'legs' not in directions:
+        if not directions or "legs" not in directions:
             print("❌ Could not find a route between the specified locations")
             return
 
@@ -1029,7 +1140,7 @@ def main():
             itinerary=itinerary,
             directions=directions,
             departure_date=args.departure_date,
-            desires=[]
+            desires=[],
         )
 
         # Step 4: Create GeoJSON
@@ -1040,7 +1151,7 @@ def main():
             directions=directions,
             preferences=preferences,
             trip_plan=trip_plan,
-            itinerary=itinerary
+            itinerary=itinerary,
         )
 
         # Step 5: Save output files
@@ -1053,17 +1164,17 @@ def main():
 
         # Save trip plan
         plan_file = trip_dir / "report.md"
-        with open(plan_file, 'w', encoding='utf-8') as f:
+        with open(plan_file, "w", encoding="utf-8") as f:
             f.write(trip_plan)
 
         # Save GeoJSON
         geojson_file = trip_dir / "route.geojson"
-        with open(geojson_file, 'w', encoding='utf-8') as f:
+        with open(geojson_file, "w", encoding="utf-8") as f:
             json.dump(geojson_data, f, indent=2)
 
         # Save profile used
         profile_file = trip_dir / "profile.yml"
-        with open(profile_file, 'w', encoding='utf-8') as f:
+        with open(profile_file, "w", encoding="utf-8") as f:
             yaml.dump(preferences, f, default_flow_style=False)
 
         print(f"\n✅ Trip plan completed!")
@@ -1073,7 +1184,7 @@ def main():
         print(f"⚙️  Profile: {profile_file}")
 
         # Calculate and display total distance
-        total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000
+        total_distance = sum(leg["distance"]["value"] for leg in directions["legs"]) / 1000
         print(f"🚴‍♂️ Total distance: {total_distance:.1f} km")
 
     except Exception as e:
@@ -1095,16 +1206,16 @@ def format_route_info(directions: Dict[str, Any]) -> str:
     Returns:
         Formatted string with route details
     """
-    if not directions or 'legs' not in directions:
+    if not directions or "legs" not in directions:
         return "Route information not available"
 
     route_info = []
     total_distance = 0
     total_duration = 0
 
-    for i, leg in enumerate(directions['legs'], 1):
-        distance_km = leg['distance']['value'] / 1000
-        duration_hours = leg['duration']['value'] / 3600
+    for i, leg in enumerate(directions["legs"], 1):
+        distance_km = leg["distance"]["value"] / 1000
+        duration_hours = leg["duration"]["value"] / 3600
 
         total_distance += distance_km
         total_duration += duration_hours
@@ -1130,25 +1241,25 @@ def format_itinerary_for_prompt(itinerary: Dict[str, Any]) -> str:
     Returns:
         Formatted string with itinerary details
     """
-    if 'itinerary' not in itinerary:
+    if "itinerary" not in itinerary:
         return "Itinerary information not available"
 
     itinerary_info = []
-    daily_plans = itinerary['itinerary']
+    daily_plans = itinerary["itinerary"]
 
     for day_key in sorted(daily_plans.keys()):
         day_plan = daily_plans[day_key]
-        day_num = day_key.replace('day_', '')
+        day_num = day_key.replace("day_", "")
 
         itinerary_info.append(f"Day {day_num}:")
         itinerary_info.append(f"  Start: {day_plan.get('start_location', 'Unknown')}")
         itinerary_info.append(f"  End: {day_plan.get('end_location', 'Unknown')}")
         itinerary_info.append(f"  Overnight: {day_plan.get('overnight_location', 'Unknown')}")
 
-        if 'highlights' in day_plan:
+        if "highlights" in day_plan:
             itinerary_info.append(f"  Highlights: {', '.join(day_plan['highlights'])}")
 
-        if 'estimated_distance_km' in day_plan:
+        if "estimated_distance_km" in day_plan:
             itinerary_info.append(f"  Distance: {day_plan['estimated_distance_km']} km")
 
         itinerary_info.append("")
@@ -1156,9 +1267,14 @@ def format_itinerary_for_prompt(itinerary: Dict[str, Any]) -> str:
     return "\n".join(itinerary_info)
 
 
-def create_geojson(start: str, end: str, directions: Dict[str, Any],
-                   preferences: Dict[str, Any], trip_plan: str,
-                   itinerary: Dict[str, Any]) -> Dict[str, Any]:
+def create_geojson(
+    start: str,
+    end: str,
+    directions: Dict[str, Any],
+    preferences: Dict[str, Any],
+    trip_plan: str,
+    itinerary: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """
     Create GeoJSON data from the trip plan and directions.
 
@@ -1187,48 +1303,49 @@ def create_geojson(start: str, end: str, directions: Dict[str, Any],
                 "description": "Main bikepacking route",
                 "stroke": "#0066cc",
                 "stroke-width": 4,
-                "stroke-opacity": 0.8
+                "stroke-opacity": 0.8,
             },
-            "geometry": {
-                "type": "LineString",
-                "coordinates": route_points
-            }
+            "geometry": {"type": "LineString", "coordinates": route_points},
         }
         features.append(route_feature)
 
-    # Add waypoint markers from itinerary
-    if 'itinerary' in itinerary:
-        daily_plans = itinerary['itinerary']
+    # Add waypoint markers from itinerary if provided
+    if itinerary and "itinerary" in itinerary:
+        daily_plans = itinerary["itinerary"]
 
         for day_key in sorted(daily_plans.keys()):
             day_plan = daily_plans[day_key]
-            day_num = day_key.replace('day_', '')
+            day_num = day_key.replace("day_", "")
 
             # Try to get coordinates for the end location
-            end_location = day_plan.get('end_location', '')
-            if end_location and gmaps:
-                try:
-                    geocode_result = gmaps.geocode(end_location)  # type: ignore
-                    if geocode_result:
-                        location = geocode_result[0]['geometry']['location']
+            end_location = day_plan.get("end_location", "")
+            if end_location:
+                coords = None
+                if gmaps:
+                    try:
+                        geocode_result = gmaps.geocode(end_location)  # type: ignore
+                        if geocode_result:
+                            loc = geocode_result[0]["geometry"]["location"]
+                            coords = [loc["lng"], loc["lat"]]
+                    except Exception as e:
+                        print(f"Warning: Could not geocode {end_location}: {e}")
+                if coords is None:
+                    coords = [0, 0]
 
-                        waypoint_feature = {
-                            "type": "Feature",
-                            "properties": {
-                                "name": f"Day {day_num}: {end_location}",
-                                "description": f"Overnight: {day_plan.get('overnight_location', 'Unknown')}",
-                                "marker-color": "#ff6600",
-                                "marker-size": "large",
-                                "marker-symbol": f"{day_num}"
-                            },
-                            "geometry": {
-                                "type": "Point",
-                                "coordinates": [location['lng'], location['lat']]
-                            }
-                        }
-                        features.append(waypoint_feature)
-                except Exception as e:
-                    print(f"Warning: Could not geocode {end_location}: {e}")
+                waypoint_feature = {
+                    "type": "Feature",
+                    "properties": {
+                        "name": f"Day {day_num}: {end_location}",
+                        "description": f"Overnight: {day_plan.get('overnight_location', 'Unknown')}",
+                        "marker-color": "#ff6600",
+                        "marker-size": "large",
+                        "marker-symbol": f"{day_num}",
+                        "type": "overnight_accommodation",
+                        "night_number": int(day_num),
+                    },
+                    "geometry": {"type": "Point", "coordinates": coords},
+                }
+                features.append(waypoint_feature)
 
     # Create the GeoJSON FeatureCollection
     geojson_data = {
@@ -1236,22 +1353,29 @@ def create_geojson(start: str, end: str, directions: Dict[str, Any],
         "features": features,
         "properties": {
             "name": f"Bikepacking Trip: {start} to {end}",
-            "description": "Generated by DirtGenie AI Trip Planner"
-        }
+            "description": "Generated by DirtGenie AI Trip Planner",
+        },
     }
 
     return geojson_data
 
 
-def plan_tour_itinerary_with_keys(start: str, end: str, nights: int, preferences: Dict[str, str],
-                                  desires: List[str], departure_date: Optional[str] = None,
-                                  openai_key: Optional[str] = None, google_maps_key: Optional[str] = None) -> Dict[str, Any]:
+def plan_tour_itinerary_with_keys(
+    start: str,
+    end: str,
+    nights: int,
+    preferences: Dict[str, str],
+    desires: List[str],
+    departure_date: Optional[str] = None,
+    openai_key: Optional[str] = None,
+    google_maps_key: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     Plan tour itinerary with user-provided API keys.
     """
     # Temporarily set up clients with user-provided keys
-    original_openai_client = globals().get('openai_client')
-    original_gmaps = globals().get('gmaps')
+    original_openai_client = globals().get("openai_client")
+    original_gmaps = globals().get("gmaps")
 
     try:
         if openai_key:
@@ -1266,15 +1390,17 @@ def plan_tour_itinerary_with_keys(start: str, end: str, nights: int, preferences
 
     finally:
         # Restore original clients
-        globals()['openai_client'] = original_openai_client
-        globals()['gmaps'] = original_gmaps
+        globals()["openai_client"] = original_openai_client
+        globals()["gmaps"] = original_gmaps
 
 
-def get_multi_waypoint_directions_with_keys(itinerary: Dict[str, Any], google_maps_key: Optional[str] = None) -> Dict[str, Any]:
+def get_multi_waypoint_directions_with_keys(
+    itinerary: Dict[str, Any], google_maps_key: Optional[str] = None
+) -> Dict[str, Any]:
     """
     Get multi-waypoint directions with user-provided Google Maps API key.
     """
-    original_gmaps = globals().get('gmaps')
+    original_gmaps = globals().get("gmaps")
 
     try:
         if google_maps_key:
@@ -1285,37 +1411,52 @@ def get_multi_waypoint_directions_with_keys(itinerary: Dict[str, Any], google_ma
 
     finally:
         # Restore original client
-        globals()['gmaps'] = original_gmaps
+        globals()["gmaps"] = original_gmaps
 
 
-def generate_trip_plan_with_keys(start: str, end: str, nights: int, preferences: Dict[str, str],
-                                 itinerary: Dict[str, Any], directions: Dict[str, Any],
-                                 departure_date: Optional[str] = None, desires: Optional[List[str]] = None,
-                                 openai_key: Optional[str] = None) -> str:
+def generate_trip_plan_with_keys(
+    start: str,
+    end: str,
+    nights: int,
+    preferences: Dict[str, str],
+    itinerary: Dict[str, Any],
+    directions: Dict[str, Any],
+    departure_date: Optional[str] = None,
+    desires: Optional[List[str]] = None,
+    openai_key: Optional[str] = None,
+) -> str:
     """
     Generate trip plan with user-provided OpenAI API key.
     """
-    original_openai_client = globals().get('openai_client')
+    original_openai_client = globals().get("openai_client")
 
     try:
         if openai_key:
             global openai_client
             openai_client = OpenAI(api_key=openai_key)
 
-        return generate_trip_plan(start, end, nights, preferences, itinerary, directions, departure_date, desires)
+        return generate_trip_plan(
+            start, end, nights, preferences, itinerary, directions, departure_date, desires
+        )
 
     finally:
         # Restore original client
-        globals()['openai_client'] = original_openai_client
+        globals()["openai_client"] = original_openai_client
 
 
-def create_geojson_with_keys(start: str, end: str, directions: Dict[str, Any],
-                             preferences: Dict[str, Any], trip_plan: str,
-                             itinerary: Dict[str, Any], google_maps_key: Optional[str] = None) -> Dict[str, Any]:
+def create_geojson_with_keys(
+    start: str,
+    end: str,
+    directions: Dict[str, Any],
+    preferences: Dict[str, Any],
+    trip_plan: str,
+    itinerary: Dict[str, Any],
+    google_maps_key: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     Create GeoJSON with user-provided Google Maps API key.
     """
-    original_gmaps = globals().get('gmaps')
+    original_gmaps = globals().get("gmaps")
 
     try:
         if google_maps_key:
@@ -1326,4 +1467,43 @@ def create_geojson_with_keys(start: str, end: str, directions: Dict[str, Any],
 
     finally:
         # Restore original client
-        globals()['gmaps'] = original_gmaps
+        globals()["gmaps"] = original_gmaps
+
+
+def extract_overnight_locations(
+    trip_plan: str, itinerary: Optional[Dict[str, Any]] = None
+) -> List[str]:
+    """Extract overnight accommodation names from a trip plan or itinerary."""
+    locations: List[str] = []
+    if itinerary and isinstance(itinerary, dict):
+        days = itinerary.get("itinerary", itinerary)
+        if isinstance(days, dict):
+            for key in sorted(days.keys()):
+                loc = days.get(key, {}).get("overnight_location")
+                if loc:
+                    locations.append(str(loc))
+    if not locations:
+        for line in trip_plan.splitlines():
+            lower = line.lower()
+            if "camp" in lower or "stay at" in lower or "accommodation" in lower:
+                if "at" in line:
+                    locations.append(line.split("at", 1)[1].strip(" -*"))
+                else:
+                    locations.append(line.strip(" -*"))
+    return locations
+
+
+def save_outputs(
+    trip_plan: str, geojson_data: Dict[str, Any], start: str, end: str
+) -> Tuple[str, str]:
+    """Save trip plan and GeoJSON to files and return their paths."""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_start = start.replace(" ", "_").replace(",", "")
+    safe_end = end.replace(" ", "_").replace(",", "")
+    md_file = f"trip_{safe_start}_to_{safe_end}_{timestamp}.md"
+    geojson_file = f"trip_{safe_start}_to_{safe_end}_{timestamp}.geojson"
+    with open(md_file, "w", encoding="utf-8") as f:
+        f.write(trip_plan)
+    with open(geojson_file, "w", encoding="utf-8") as f:
+        json.dump(geojson_data, f, indent=2)
+    return md_file, geojson_file
