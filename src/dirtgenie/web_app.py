@@ -214,7 +214,8 @@ def main():
 
     # Add helpful note about departure date
     if departure_date:
-        st.info(f"🌤️ **Departure date set to {departure_date.strftime('%B %d, %Y')}** - The AI will search for weather forecasts, seasonal information, and current events for your travel dates.")
+        st.info(
+            f"🌤️ **Departure date set to {departure_date.strftime('%B %d, %Y')}** - The AI will search for weather forecasts, seasonal information, and current events for your travel dates.")
 
     # Profile preferences
     st.header("🏕️ Trip Preferences")
@@ -278,15 +279,15 @@ def main():
 
     # Bike Setup Section
     st.header("🚴 Bike Setup")
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
         tire_size = st.selectbox(
             "Tire Size",
             options=[
                 "700x23c (Road - Narrow)",
-                "700x25c (Road - Standard)", 
+                "700x25c (Road - Standard)",
                 "700x28c (Road - Wide)",
                 "700x32c (Gravel - Narrow)",
                 "700x35c (Gravel - Standard)",
@@ -305,7 +306,7 @@ def main():
             index=4,  # Default to 700x35c
             help="Your bike's tire size - helps determine suitable terrain and routes"
         )
-    
+
     with col2:
         if tire_size == "Other/Custom":
             custom_tire_size = st.text_input(
@@ -316,7 +317,7 @@ def main():
             display_tire_size = custom_tire_size if custom_tire_size else "700x35c"
         else:
             display_tire_size = tire_size
-            
+
         # Show tire capability info
         if "700x" in display_tire_size and any(x in display_tire_size.lower() for x in ["23", "25", "28"]):
             st.info("🏁 **Road bike setup** - Best for paved roads and smooth surfaces")
@@ -341,7 +342,7 @@ def main():
 
         # Create preferences dictionary
         departure_date_str = departure_date.strftime("%Y-%m-%d") if departure_date else None
-        
+
         preferences = {
             "accommodation": accommodation,
             "stealth_camping": stealth_camping,
@@ -366,7 +367,7 @@ def main():
             # Step 1: Plan the itinerary
             status_text.text("🧠 Planning your tour itinerary...")
             progress_bar.progress(30)
-            itinerary = plan_tour_itinerary(start_location, end_location, nights, preferences, departure_date_str)
+            itinerary = plan_tour_itinerary(start_location, end_location, nights, preferences, [], departure_date_str)
 
             # Step 2: Get route directions
             status_text.text("🗺️ Getting bicycle route information...")
@@ -380,7 +381,8 @@ def main():
             # Step 3: Generate detailed trip plan
             status_text.text("📝 Generating detailed trip plan...")
             progress_bar.progress(70)
-            trip_plan = generate_trip_plan(start_location, end_location, nights, preferences, itinerary, directions, departure_date_str)
+            trip_plan = generate_trip_plan(start_location, end_location, nights,
+                                           preferences, itinerary, directions, departure_date_str)
 
             # Step 4: Create GeoJSON
             status_text.text("📍 Creating route visualization...")
@@ -395,7 +397,7 @@ def main():
 
             # Calculate total distance
             total_distance = sum(leg['distance']['value'] for leg in directions['legs']) / 1000
-            
+
             # Display trip metrics
             col1, col2 = st.columns(2)
             with col1:
@@ -516,7 +518,7 @@ def main():
 
         # Display current trip metrics
         total_distance = sum(leg['distance']['value'] for leg in trip_data['directions']['legs']) / 1000
-        
+
         col1, col2 = st.columns(2)
         with col1:
             st.metric("Total Distance", f"{total_distance:.1f} km")
