@@ -1,18 +1,31 @@
 import { useEffect, useState } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './firebase';
 import './App.css';
 import ApiKeySetup from './components/ApiKeySetup';
 import TripPlannerForm from './components/TripPlannerForm';
 import TripResults from './components/TripResults';
 import TripRevisionModal from './components/TripRevisionModal';
 import { TripPlanRequest } from './types/api';
+import Login from './components/Login';
+import Sidebar from './components/Sidebar';
 
 function App() {
+    const [user, setUser] = useState<any>(null);
     const [tripResponse, setTripResponse] = useState<any>(null);
     const [tripRequest, setTripRequest] = useState<TripPlanRequest | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
     const [apiKeysSet, setApiKeysSet] = useState(false);
     const [isCheckingKeys, setIsCheckingKeys] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    useEffect(() => {
+        const unsub = onAuthStateChanged(auth, (u) => {
+            setUser(u);
+        });
+        return () => unsub();
+    }, []);
 
     useEffect(() => {
         // Check if we're in development (localhost) or if API keys are set in environment
@@ -28,10 +41,31 @@ function App() {
                         // In development, assume keys are set in environment
                         setApiKeysSet(true);
                     } else {
-                        // In production, check if keys are in session storage
+                        // In production, check if keys are in session storage or firestore
                         const hasSessionKeys = sessionStorage.getItem('openai_api_key') &&
                             sessionStorage.getItem('google_maps_api_key');
-                        setApiKeysSet(!!hasSessionKeys);
+                        if (hasSessionKeys) {
+                            setApiKeysSet(true);
+                        } else if (user) {
+                            const { doc, getDoc } = await import('firebase/firestore');
+                            const { db } = await import('./firebase');
+                            const ref = doc(db, 'users', user.uid);
+                            const snap = await getDoc(ref);
+                            if (snap.exists()) {
+                                const data = snap.data() as any;
+                                if (data.openaiKey && data.googleMapsKey) {
+                                    sessionStorage.setItem('openai_api_key', data.openaiKey);
+                                    sessionStorage.setItem('google_maps_api_key', data.googleMapsKey);
+                                    setApiKeysSet(true);
+                                } else {
+                                    setApiKeysSet(false);
+                                }
+                            } else {
+                                setApiKeysSet(false);
+                            }
+                        } else {
+                            setApiKeysSet(false);
+                        }
                     }
                 }
             } catch (error) {
@@ -44,7 +78,7 @@ function App() {
         };
 
         checkApiKeys();
-    }, []);
+    }, [user]);
 
     const handleApiKeysSet = (keys: { openaiKey: string; googleMapsKey: string }) => {
         setApiKeysSet(true);
@@ -63,6 +97,11 @@ function App() {
         setTripResponse(null);
         setTripRequest(null);
     };
+
+    // Require login
+    if (!user) {
+        return <Login />;
+    }
 
     // Show loading while checking API keys
     if (isCheckingKeys) {
@@ -103,6 +142,13 @@ function App() {
                                     🔑 API Keys Active
                                 </div>
                             )}
+
+                            <button
+                                onClick={() => setSidebarOpen(true)}
+                                className="bg-gray-200 px-3 py-2 rounded-lg"
+                            >
+                                ⚙️ Settings
+                            </button>
 
                             {tripResponse && (
                                 <button
@@ -163,6 +209,7 @@ function App() {
                     </div>
                 </div>
             </footer>
+            <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         </div>
     );
 }

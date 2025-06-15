@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { auth, db } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface ApiKeySetupProps {
     onApiKeysSet: (keys: { openaiKey: string; googleMapsKey: string }) => void;
@@ -23,6 +25,15 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeysSet }) => {
             // Store API keys temporarily in sessionStorage (not localStorage for security)
             sessionStorage.setItem('openai_api_key', openaiKey.trim());
             sessionStorage.setItem('google_maps_api_key', googleMapsKey.trim());
+
+            // If a user is logged in, persist keys to Firestore
+            const user = auth.currentUser;
+            if (user) {
+                await setDoc(doc(db, 'users', user.uid), {
+                    openaiKey: openaiKey.trim(),
+                    googleMapsKey: googleMapsKey.trim(),
+                });
+            }
 
             // Simply proceed without validation - let the backend handle invalid keys
             onApiKeysSet({ openaiKey: openaiKey.trim(), googleMapsKey: googleMapsKey.trim() });

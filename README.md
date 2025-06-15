@@ -5,6 +5,8 @@
 
 An intelligent trip planner that creates detailed bikepacking itineraries using OpenAI's GPT models and Google Maps routing data. DirtGenie features both a powerful CLI tool and a modern web application built with React and FastAPI.
 
+The web app now supports Firebase authentication. After signing in with Google, you can securely save your API keys to Firestore and manage them from a convenient sidebar menu.
+
 ## ✨ Features
 
 ### 🧠 Intelligent Planning
