@@ -1,7 +1,4 @@
-# 🚴‍♀️ DirtGenie### 🖥️ Dual Interface
-- **🌐 Web App**: Modern React frontend with FastAPI backend, responsive design for all devices
-- **⌨️ CLI Tool**: Powerful command-line interface for automation and scripting
-- **📱 Mobile-Friendly**: Web interface works great on tablets and phonesI-Powered Bikepacking Trip Planner
+# 🚴‍♀️ DirtGenie
 
 An intelligent trip planner that creates detailed bikepacking itineraries using OpenAI's GPT models and Google Maps routing data. DirtGenie features both a powerful CLI tool and a modern web application built with React and FastAPI.
 
