@@ -1,4 +1,5 @@
 # 🚴‍♀️ DirtGenie
+[![Pull image](https://img.shields.io/badge/ghcr.io/a20r/dirtgenie-pull-blue?logo=docker)](https://ghcr.io/a20r/dirtgenie)
 
 An intelligent trip planner that creates detailed bikepacking itineraries using OpenAI's GPT models and Google Maps routing data. DirtGenie features both a powerful CLI tool and a modern web application built with React and FastAPI.
 

@@ -14,7 +14,7 @@ requirements = (this_directory / "requirements.txt").read_text().strip().split('
 
 setup(
     name="dirtgenie",
-    version="0.3.0",
+    version="1.0.0",
     author="Alex Wallar",
     author_email="alex@wallar.me",
     description="AI-Powered Bikepacking Trip Planner",
