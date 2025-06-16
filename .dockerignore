@@ -65,6 +65,14 @@ dirtgenie_*.geojson
 docs/_build/
 docs/
 
+/web/frontend/node_modules/
+/web/frontend/build/
+/web/backend/venv/
+/web/backend/__pycache__
+/.venv
+/build/
+/__pycache__/
+
 # Test outputs
 .pytest_cache/
 .coverage
