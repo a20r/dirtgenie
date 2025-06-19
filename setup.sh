@@ -62,15 +62,7 @@ EOF
     echo "✅ API keys saved to .env file"
     echo ""
     echo "🚀 Choose how to run DirtGenie:"
-    echo "   1) Web App (Recommended): streamlit run src/dirtgenie/web_app.py"
+    echo "   1) Web App (Recommended): cd web && ./start.sh"
     echo "   2) CLI Tool: ./scripts/dirtgenie --start 'Start Location' --end 'End Location' --nights number"
     echo ""
-fi
-
-# Ask user what they want to do
-read -p "🤖 Start the web app now? (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "🌐 Starting web app..."
-    streamlit run src/dirtgenie/web_app.py
 fi
