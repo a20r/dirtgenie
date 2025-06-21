@@ -3,6 +3,8 @@
 
 An intelligent trip planner that creates detailed bikepacking itineraries using OpenAI's GPT models and Google Maps routing data. DirtGenie features both a powerful CLI tool and a modern web application built with React and FastAPI.
 
+Created purely with vibes.
+
 ## ✨ Features
 
 ### 🧠 Intelligent Planning
